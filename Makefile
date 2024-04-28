@@ -1,9 +1,8 @@
-
-PNG=$(shell ls resources/*.png)
-DATE=$(shell date +%Y-%m-%d)
-YEAR=$(shell date +%Y)
-DIR=webola-$(DATE)
-REVNO=$(shell bzr revno)
+#DATE=$(shell date +%Y-%m-%d)
+#YEAR=$(shell date +%Y)
+#DIR=webola-$(DATE)
+#REVNO=$(shell bzr revno)
+VERSION=$(shell date +%Y.%-m.%-d)
 
 push:
 #	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
@@ -15,7 +14,7 @@ install:
 	./webola/prepare_version.py
 	sudo pip uninstall webola
 	python -m build
-#	sudo -H pip install dist/webola-$(VERSION)-py3-none-any.whl
+	sudo -H pip install dist/webola-$(VERSION)-py3-none-any.whl
 
 dot: webola/database.png
 
@@ -46,14 +45,14 @@ requirements.txt:
 dist:
 	pyinstaller --onefile --hidden-import pony.orm.dbproviders.sqlite webola.py
 
-zip: requirements.txt
-	rm -f $(DIR).zip
-	mkdir -p $(DIR)/webola
-	cp webola/*.py $(DIR)/webola/
-	cp webola.py startliste_dummy.xlsx $(DIR)/
-	cat README | sed "s/__VERSION_TAG__/$(REVNO) ($(DATE))/" | sed "s/__YEAR__/$(YEAR)/"> $(DIR)/README
-	zip -r $(DIR) $(DIR)
-	rm -rf $(DIR)
+#zip: requirements.txt
+#	rm -f $(DIR).zip
+#	mkdir -p $(DIR)/webola
+#	cp webola/*.py $(DIR)/webola/
+#	cp webola.py startliste_dummy.xlsx $(DIR)/
+#	cat README | sed "s/__VERSION_TAG__/$(REVNO) ($(DATE))/" | sed "s/__YEAR__/$(YEAR)/"> $(DIR)/README
+#	zip -r $(DIR) $(DIR)
+#	rm -rf $(DIR)
 
 clean:
 	rm -rf build dist tex-tmp

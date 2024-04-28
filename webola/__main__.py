@@ -4,10 +4,10 @@ import argparse
 
 from pony import orm
 
-from webola.code.gui import WebolaGui, early_exit, maybe_use_sql_file, check_outfile
+from webola.gui import WebolaGui, early_exit, maybe_use_sql_file, check_outfile
 from pathlib import Path
-from webola.code.database import db
-from webola.code.utils import is_linux
+from webola.database import db
+from webola.utils import is_linux
 
 # stackoverflow.com/questions/8786136/pyqt-how-to-detect-and-close-ui-if-its-already-running
 class SingleApplication(QApplication):
@@ -87,9 +87,9 @@ def parse_arguments():
     parser.add_argument("-o", "--output"   , metavar= 'file.xlsx' , help="Ergebnisliste")
     return parser.parse_args()
 
-def start():
+def start(cmdline_args):
     args = parse_arguments()    
-    app  = SingleApplication(sys.argv, 'webola')
+    app  = SingleApplication(cmdline_args, 'webola')
     if app.is_running():
         box = QMessageBox(QMessageBox.Critical, "Webola", "Eine andere <b>Webola</b> Instanz läuft bereits, aber es ist nur eine Instanz erlaubt ....")
         box.setWindowIcon(QIcon(":/webola.png"))
@@ -98,7 +98,7 @@ def start():
         
     if not is_linux(): QApplication.setStyle(QStyleFactory.create("Fusion"))             
     outfile   = check_outfile(args.output, args.force)        
-    xlsx, sql = find_files(args.input, args.force, sys.argv)
+    xlsx, sql = find_files(args.input, args.force, cmdline_args)
                 
     db.bind(provider='sqlite', filename=str(sql.resolve()), create_db=True)
     db.generate_mapping(create_tables=True)
@@ -108,4 +108,5 @@ def start():
         dlg.show()
         app.exec()
 
-    
+if __name__ == '__main__':
+    start(sys.argv)
