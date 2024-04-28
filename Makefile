@@ -8,7 +8,7 @@ push:
 #	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
 # add ssh-key to gitlab account (avatar -> edit profile) and run 'ssh -T git@github.com'
 	./webola/prepare_version.py
-#	git push origin
+	git push origin
 
 install:
 	./webola/prepare_version.py
