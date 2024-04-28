@@ -1,0 +1,136 @@
+\documentclass[svgnames,tikz]{standalone}
+
+\usepackage{fontawesome}
+\usetikzlibrary{math}
+
+\begin{document}
+
+\tikzset{
+  o/.style = {line width=12mm},
+  i/.style = {line width=6mm, white},
+}
+
+\begin{tikzpicture}[line cap=round,scale=2]
+  \draw [o,white] (0,0) rectangle (2,2);
+  \draw [o] (0,1) -- (2,1);
+  \draw [i] (0,1) -- (2,1);
+\end{tikzpicture}
+
+\begin{tikzpicture}[line cap=round,scale=2]
+  \draw [o] (0,1) -- (2,1);
+  \draw [o] (1,0) -- (1,2);
+  \draw [i] (0,1) -- (2,1);
+  \draw [i] (1,0) -- (1,2);
+\end{tikzpicture} 
+
+%\begin{tikzpicture}[scale=1.25,line cap=round]
+%  \draw [i,fill=DarkRed] (0,0) circle (2.5);
+%  \foreach \r in {1,3} {
+%    \draw [i] (0,0) circle (\r/2);
+%  }
+%  \draw [line width=3mm,black,<-,>=latex] (0,0) -- (45:3);
+%  \foreach \r in {1,2,3} {
+%    \draw [line width=2mm,black] (45:3-\r*0.4) -- ++(45+35:0.5);
+%    \draw [line width=2mm,black] (45:3-\r*0.4) -- ++(45-35:0.5);
+%  }  
+%\end{tikzpicture}
+
+\newcommand{\target}[1]{%
+  \begin{tikzpicture}[line width=3mm,line cap=round, line join=round,
+    evaluate={
+      \a=45;\b=35;\r=4.25;\d=1;\w=0.75;
+      \x=3;\y=-2.25;\c=2;\l=0.7;\s=1.1;
+    }]
+    \foreach \r/\f in {3/#1,2/white,1/#1} {
+      \draw [line width=3mm,fill=\f] (0,0) circle (\r);
+    }
+    \draw [#1,line width=  5mm,line cap=rect](0,0) -- ++(\a:1.45*\c);
+    \draw [white  ,line width=5.5mm,line cap=rect](\a:.7*\c) -- (\a:0.78*\c);
+    \draw [<-](0,0) -- ++(\a:\r)
+    -- ++(\a+\b:\w) -- ++(180+\a:\d) -- ++(180+\a+\b:\w)
+    -- ++(\a-\b:\w) -- ++(    \a:\d) -- ++(180+\a-\b:\w);
+    %% 
+    \foreach \a in {90,50} {
+      \draw [line width=2mm,fill=white] (\x,\y) ++(\a:\c+\l/2) ++(\a+90:\s/2) -- ++(\a-90:\s) --++(\a:\l/2)--++(\a+90:\s)--++(\a:-\l/2);
+      \draw [line width=2mm,fill=white] (\x,\y) ++(\a:\c-\l/2) ++(\a+90:\l/2) -- ++(\a-90:\l) --++(\a:\l  )--++(\a+90:\l)--++(\a:-\l/2);
+    }
+    \draw [fill=gray!25] (\x,\y) circle (\c);
+    \foreach \a in {0,30,...,360} {
+      \draw (\x,\y) ++(\a:0.66*\c) -- ++(\a:0.2*\c);
+    }
+    \draw (\x,\y) circle (1mm) edge [->] ++(15:0.66*\c);
+  \end{tikzpicture}
+}
+
+\target{FireBrick}
+\target{gray}
+
+
+\begin{tikzpicture}[line join =round, line cap=round,xscale=1.2]
+  \draw [line width=4mm,white] (0,0) rectangle (4,6);
+  \draw [line width=3mm,black] (0,0) rectangle (4,6);
+  \foreach \y in {2,3,4,5} {
+    \draw [line width=3mm,black] (0.75,\y) -- (3.25,\y);    
+  }
+\end{tikzpicture}
+
+\newcommand{\battery}[2]{
+  \batteryImpl{#1}{#2}{}
+  \batteryImpl{#1}{#2}{\node [rotate=45,text=black] at (2,2.5) {\scalebox{2.25}{\Huge\faPlug}};}
+}
+  
+\newcommand{\batteryImpl}[3]{
+  \begin{tikzpicture}[line join =round, line cap=round,x=22,
+    n/.style={line width=3mm,gray},
+    w/.style={line width=9mm}]
+    \useasboundingbox (-0.5,-0.5) rectangle (4.5,5.75);
+    \draw [n,line width=4mm] (1.5,5.25) -- ++(1,0);
+    \draw [n] (0,0) rectangle (4,5);
+    \foreach \k in {1,...,#1}{
+      \draw [w,draw=#2] (1,\k) -- ++(2,0);
+    }
+    #3
+    % \fill [white]   (3.5,2.5) coordinate (L) circle (16mm);
+    % \fill [black]         (L) coordinate (L) circle (14mm);
+    % \node [text=white] at (L) {\scalebox{3}{\Huge\faBolt}};
+  \end{tikzpicture}}
+
+\battery{1}{Red}
+\battery{2}{Red!50!Goldenrod}
+\battery{3}{Goldenrod}
+\battery{4}{Green}
+
+\begin{tikzpicture}[line cap=round,scale=2,l/.style={o,gray}]
+  \draw [l] (1,1) circle (25mm);
+  %\draw [l] (1,1) circle (15mm);
+  \draw [l] (-2.5,1) -- (4.5,1);
+  \draw [l] (1,-2.5) -- (1,4.5);
+  %\draw [i] (1,1) circle (2mm);
+\end{tikzpicture} 
+
+\def\p#1{%
+  \draw [l] (#1) circle (10mm);
+  \draw [l] (#1) ++(\r,-3.75) arc (0:180:\r);
+}%
+\begin{tikzpicture}[line cap=round,scale=2,l/.style={o,gray},evaluate={\r=2;}]
+  \draw [l,line width=2mm,loosely dashed] (-5,1) -- (5,1);
+  \p{-4,4}
+  \p{0,0}
+  \p{3,0}
+\end{tikzpicture} 
+\begin{tikzpicture}[line cap=round,scale=2,l/.style={o,gray},evaluate={\r=2;}]
+  \draw [l,line width=2mm,loosely dashed] (-5,1) -- (5,1);
+  \p{-4,4}
+  \p{-1,4}
+  \p{3,0}
+\end{tikzpicture} 
+
+\begin{tikzpicture}[line cap=round,scale=6,evaluate={\o=0.75/2;},o,gray]
+  \draw [rounded corners] (0,0) rectangle (2,2);
+  \draw (2,0) ++(-\o, \o) edge [shorten >=10mm] (1,1);
+  \draw (0,2) ++( \o,-\o) edge [shorten >=10mm] (1,1);
+  \draw (0,2) ++( \o,-\o) ++(0,-\o) -- ++(0, \o) -- ++( \o,0);
+  \draw (2,0) ++(-\o, \o) ++(0, \o) -- ++(0,-\o) -- ++(-\o,0);
+\end{tikzpicture} 
+
+\end{document}

@@ -1,0 +1,22 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+  <file alias="plus.png"  >plus.png</file>
+  <file alias="result.png">result.png</file>
+  <file alias="minus.png" >minus.png</file>
+  <file alias="webola.png">webola.png</file>
+  <file alias="run.png"   >run.png</file>
+  <file alias="xlsx.png"  >result.png</file>
+  <file alias="battery_critical.png">battery_critical.png</file>
+  <file alias="battery_critical_powered.png">battery_critical_powered.png</file>
+  <file alias="battery_full.png">battery_full.png</file>
+  <file alias="battery_full_powered.png">battery_full_powered.png</file>
+  <file alias="battery_low.png">battery_low.png</file>
+  <file alias="battery_low_powered.png">battery_low_powered.png</file>
+  <file alias="battery_medium.png">battery_medium.png</file>
+  <file alias="battery_medium_powered.png">battery_medium_powered.png</file>
+  <file alias="target.png"  >target.png</file>
+  <file alias="name_team.png"  >name_team.png</file>
+  <file alias="team_name.png"  >team_name.png</file>
+  <file alias="fullscreen.png" >fullscreen.png</file>
+</qresource>
+</RCC>

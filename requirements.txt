@@ -1,0 +1,11 @@
+base45
+cbor2
+Flask
+opencv_python
+openpyxl
+pony
+psutil
+PyQt5
+PyQt5_sip
+PyQt5_sip
+pyzbar

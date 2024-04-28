@@ -1,0 +1,442 @@
+from webola.utils import time2str, is_linux
+
+import time
+from pathlib import Path
+import codecs
+from PyQt5.Qt import QApplication
+import re
+from webola import exporter
+from webola.database import Team
+import shutil
+import filecmp
+from webola.statistik import collect_data
+
+# https://stackoverflow.com/questions/26303293/pyqt-qprogressdialog-shows-but-is-empty-displays-background-content
+def nongui(fun):
+    """Decorator running the function in non-gui thread while
+    processing the gui events."""
+    from multiprocessing.pool import ThreadPool
+
+    def wrap(*args, **kwargs):
+        pool = ThreadPool(processes=1)
+        a_sync = pool.apply_async(fun, args, kwargs)
+        while not a_sync.ready():
+            a_sync.wait(0.01)
+            QApplication.processEvents()
+        return a_sync.get()
+
+    return wrap
+
+def init_latex_export(xlsx, key, head):
+    base = (xlsx.parent / f"{xlsx.stem}_{key}")
+    tex  = base.with_suffix('.tex')
+    pdf  = base.with_suffix('.pdf')
+    # maybe remove date from head since it will be printed separately
+    head = re.sub(r'\s+\d+\.\d+\.\d+$', '', head) 
+    
+    return tex, pdf, head
+
+def bogenlauf_latex_sty_file():
+    #return Path(__file__).parents[1] / 'resources' / 'bogenlauf'
+    return 'webola/bogenlauf'
+
+@nongui
+def generate_urkunden(xlsx, urkunden,latex_data): 
+    
+    tex, pdf, head = init_latex_export(xlsx, 'Urkunden', latex_data.titel)
+
+    backup = make_backup(tex)
+
+    with codecs.open(str(tex), 'w', encoding="utf8") as latex:
+        prt = lambda msg: latex.write(msg+"\n")
+        prt(r'\documentclass{article}')
+        prt(r'\usepackage{%s}'   % bogenlauf_latex_sty_file() )
+        prt(r'\begin{document}')
+        #if latex_data.template == 'DM23':
+        #    prt(r'\definecolor{reddish}{HTML}{C45911}') 
+        #    prt(r'\color{reddish}')
+        
+        prt(r'\titel{%s}'        % head               )
+        prt(r'\template{%s}'     % latex_data.template)
+        prt(r'\datum{%s}'        % latex_data.datum   )
+        prt(r'\ort{%s}'          % latex_data.ort     )
+        prt(r'\staffelmode{%s}'  % latex_data.staffel )
+        prt(r'\fehlermode{%s}'   % latex_data.modus   )
+        prt(r'\strafenmode{%s}'  % latex_data.strafen )
+        prt(r'\teamnamemode{%s}' % latex_data.teamname)
+        latex.writelines(u.tex+"\n" for u in urkunden )
+        prt(r'\end{document}')
+
+    return prepare_to_run_latex(tex, backup, pdf, latex_data.formate)
+
+def prepare_to_run_latex(tex,backup,pdf,formats):    
+    if 'PDF' in formats:        
+        to_do = []
+        
+        if backup and filecmp.cmp(backup,tex, shallow=False) and tex.with_suffix('.pdf').exists():
+            print(f"[INFO] No need to run LaTeX on unchanged file '{tex}' ...")
+        else:
+            tex_tmp = tex.parent / 'tex-tmp'
+            if not tex_tmp.exists():
+                tex_tmp.mkdir()
+            assert tex_tmp.is_dir()
+            
+            for _ in range(2):
+                # run twice to get background picture right
+                to_do.append(['lualatex', '-interaction=batchmode', '-output-directory=%s' % tex_tmp, str(tex)])
+            
+            tmp = pdf.parent / tex_tmp / Path(pdf.name)
+            # copy command differs for Linux/Windows ... correct it later
+            to_do.append([f'COPY|{str(tmp)}|{str(pdf)}'])
+        
+        return pdf, to_do
+    else:
+        return None, []
+
+@nongui
+def generate_medaillenspiegel(xlsx, ms, latex_data):
+
+    tex, pdf, head = init_latex_export(xlsx, 'Medaillenspiegel', latex_data.titel)
+
+    backup = make_backup(tex)
+
+    with codecs.open(str(tex), 'w', encoding="utf8") as latex:
+        prt = lambda msg: latex.write(msg+"\n")
+        prt(r'\documentclass{article}')
+        prt(r'\usepackage{%s}'   % bogenlauf_latex_sty_file())
+        prt(r'\usepackage{booktabs}')
+        prt(r'\begin{document}')
+        prt(r'\titel{%s}'        % head)
+        prt(r'\datum{%s}'        % latex_data.datum)
+        prt(r'\newcommand{\m}[1]{\makebox[14mm][c]{\textbf{#1}}}')
+        prt(r'\vspace*{0.25cm}')
+        prt(r'\begin{center}')
+        prt(r'\scalebox{1.66}{\Huge Medaillenspiegel} \\[4mm]')
+        prt(r'\token[scale=1.0]{titel} \\[4mm]')
+        prt(r'\token[scale=0.8]{datum} \\[5mm]')
+        prt(r'\Large\renewcommand\arraystretch{1.125}\maybeVShrink{\begin{tabular}{clccc}')
+        prt(r'\toprule')
+        prt(r'{} & \textbf{Verein}            & \m{Gold} & \m{Silber} & \m{Bronze} \\')
+        prt(r'\midrule')
+
+        latex.writelines(e.tex()+"\n" for e in ms.ergebnisse)
+
+        prt(r'\midrule\addlinespace[-0.5ex]')
+        prt(r'\multicolumn{2}{l}{\small %d Starter:innen bei %d Meldungen aus %d Vereinen} &' % (ms.starter, ms.meldungen, ms.vereine))
+        prt(r'\multicolumn{3}{r}{\small Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", 
+                                                                        time.localtime()))
+        prt(r'\end{tabular}}')
+        prt(r'\vfill')
+        prt(r'\scriptsize\maybeShrink{%s}' % ms.info)
+        prt(r'\end{center}')
+        prt(r'\end{document}')
+
+    return prepare_to_run_latex(tex, backup, pdf, latex_data.formate)
+    
+def prepare_latex_export_urkunden(xlsx, ms, latex_data):
+    
+    to_do = []
+    
+    pages_for, urkunden = collect_urkunden_data(latex_data)
+            
+    _  , ms_cmds = generate_medaillenspiegel(xlsx, ms, latex_data)
+    pdf, u_cmds  = generate_urkunden        (xlsx, urkunden, latex_data)
+    
+    if pdf:
+        to_do.extend(ms_cmds) # call latex to generate Medaillenspiegel
+        to_do.extend( u_cmds) # call latex to turn tex into pdf
+        
+        if u_cmds and is_linux:
+            for lauf in sorted(pages_for.keys(), key=lambda l: l.wettkampf_tag*100+l.tab_position):
+                # call pdfjam to select individual pages for every Lauf
+                QApplication.processEvents()
+                pages = ",".join(str(n) for n in pages_for[lauf])
+                out   = (pdf.parent / f"{pdf.stem}_{marker(lauf)}.pdf")
+                to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
+    
+    return to_do
+
+def marker(lauf):
+    name = lauf.name
+    if name.endswith("'1") or name.endswith("'2"):
+        prefix = f'Tag_{name[-1]}_'
+        name   = name[:-2]
+    else:
+        prefix = ""
+    
+    name = name.replace('/','_').replace(' ','_').replace(':','')
+        
+    return f"{prefix}{lauf.tab_position+1:02d}_{name}"
+
+class Urkunde():
+    zaehler = 0
+    
+    def __init__(self, team, typ, pos, key, abstand):
+        Urkunde.zaehler += 1
+        self.nummer = Urkunde.zaehler
+        self.team   = team
+        name, self.verein = team.get_name_verein()
+        self.data = ",".join((
+            'pos={%s}'       % (pos if team.wertung else '-'),
+            'klasse={%s}'    %  self.texify(key), 
+            '%s={%s}'        % (typ, self.texify(name)), 
+            'zeit={%s}'      % time2str(team.zeit()), 
+            'abstand={%s}'   % abstand, 
+            'fehler=%s'      % team.fehler() or 0, 
+            'schiessen=%d'   % team.lauf.anzahl_schiessen, 
+            'pfeile=%d'      % team.lauf.anzahl_pfeile, 
+            'strafen={%s}'   % '',
+            'strafzeit={%s}' % team.strafen(sec='sec')))
+    
+    @staticmethod
+    def texify(string):
+        return (string.replace('&', r'\&')
+                      .replace('$', r'\$')
+                      .replace('_', r'\_')
+                      .replace('<', r'$<$')
+                      .replace('>', r'$>$')
+                      .replace('%', r'\%')
+                      .replace('°', r'\degree\xspace ')
+                      .replace('^', r'\^{}')
+                      )
+      
+class EinzelUrkunde(Urkunde):
+    def __init__(self, team, pos, klasse, abstand):
+        super().__init__(team, 'name', pos, klasse, abstand)      
+        self.tex = r'\urkunde{%s,verein={%s}}' % (self.data, self.texify(self.verein))
+
+class StaffelUrkunde(Urkunde):
+    def __init__(self, team, pos, klasse, abstand, modus):
+        super().__init__(team, 'team', pos, klasse, abstand)
+        starter  = self.collect_starter()
+        self.tex = r'\staffelurkunde{%s,vereine={%s}}{%s}'  % (self.data, self.texify(self.verein), ",".join("{%s}" % s for s in starter))
+
+        if modus == 'Team'          : pass
+        elif modus == 'Einzeln'     : self.nummer = self.count_individual_urkunden(len(starter)  )
+        elif modus == 'Einzeln+Team': self.nummer = self.count_individual_urkunden(len(starter)+1)
+        else:
+            raise Exception("Unknown Staffelmode '{modus}' ...")
+
+    def count_individual_urkunden(self,num):
+        nummern = [self.nummer + n for n in range(num) ]
+        Urkunde.zaehler = nummern[-1]
+        return ",".join(str(n) for n in nummern)
+        
+    def collect_starter(self):
+        starter = []
+        for s in self.team.liste():
+            p = []
+            strafen = "" if s.strafen == 0 else f"{s.strafen}x{s.einheit}"
+            p.append( "name"     +"={%s}" % self.texify(s.get_name()) )
+            p.append( "verein"   +"={%s}" % self.texify(s.verein    ) )
+            p.append( "zeit"     +"=%s"   % time2str   (s.zeit()    ) )
+            p.append( "fehler"   +"=%d"   % (s.fehler or 0)        )
+            p.append( "strafen"  +"={%s}" % strafen )
+            p.append( "strafzeit"+"={%s}" % s.strafzeit(sec='sec') )
+            starter.append(",".join( p ))
+        return starter
+        
+def collect_urkunden_data(latex_data):
+
+    pages_for = {}
+    urkunden  = []
+    
+    Urkunde.zaehler = 0
+    
+    for wertung in collect_data(latex_data.wettkampf):
+        if 'Vorlauf' in wertung.klasse:
+            # no Urkunde for Vorlauf
+            continue
+
+        pos, sieger, klasse = 1, None, wertung.klasse.removesuffix(' (Finallauf)')
+                
+        for team in Team.sortiere(wertung.teams):
+            if team.platz and not team.is_dsq() and latex_data.maxres.valid(team,pos):
+                if pos == 1:
+                    sieger  = team.zeit()
+                    abstand = None
+                else:
+                    abstand = time2str(team.zeit() - sieger)
+                
+                if team.ist_staffel():
+                    urkunde = StaffelUrkunde(team, pos, klasse, abstand, latex_data.staffel)
+                else:
+                    urkunde = EinzelUrkunde (team, pos, klasse, abstand)
+                
+                if team.lauf not in pages_for:
+                    pages_for[team.lauf] = []
+                
+                pages_for[team.lauf].append(urkunde.nummer)
+                urkunden.append(urkunde)
+                
+                pos += 1 if team.wertung else 0
+
+    return pages_for, urkunden
+ 
+class TexTableWriter():
+    def __init__(self, file):
+        self.prnt = lambda msg, end='\n': file.write(str(msg)+end) #print(msg,end=end)
+        self.row  = None
+        self.col  = None
+        self.have_header = False
+        self.staffel = False
+
+    def start_new_table(self):
+        if self.staffel: 
+            self.close_table()
+            self.prnt(r'\newpage')
+            self.prnt(r'\fancyhead[L]{\large\bf Ergebnisse (Staffel)\quad -- \quad %s}' % self.header_text)
+             
+        
+        self.prnt(r'\begin{longtable}{@{\,}l@{\extracolsep{\fill}}cl@{~}l@{~}c@{~}ccc@{~}c@{\,}}')
+        
+        if self.staffel: self.prnt(r'\midrule')
+        
+        self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
+        self.prnt(r'\endfoot')
+        
+        if self.staffel: 
+            self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
+            self.prnt(r'\endlastfoot')        
+            self.prnt(r'& & & & & Zeit & Abstand & Fehler\\\midrule')
+            self.prnt(r'\endhead')
+        
+        return True
+
+    def print_header(self, text):
+        self.prnt(r'\documentclass[12pt]{article}') 
+        self.prnt(r'\usepackage{fontspec}')
+        self.prnt(r'\setmainfont{Alegreya Sans}') 
+        self.prnt(r'\usepackage{lastpage}')
+        self.prnt(r'\usepackage[a4paper,landscape, headheight=18pt, margin=10mm, top=18mm, headsep=5mm]{geometry}')
+        self.prnt(r'\usepackage{fancyhdr}')
+        self.prnt(r'\fancyhf{}')  
+        self.prnt(r'\fancypagestyle{plain}{}') 
+        self.prnt(r'\fancyhead[L]{\large\bf Ergebnisse\quad -- \quad %s}' % text)
+        self.prnt(r'\fancyhead[R]{\footnotesize Seite \thepage\ von \pageref{LastPage}}') 
+        self.prnt(r'\pagestyle{plain}') 
+        self.prnt(r'\usepackage{csquotes}')
+        self.prnt(r'\MakeOuterQuote{"}')
+        self.prnt(r'\usepackage{longtable}')
+        self.prnt(r'\setlength\LTcapwidth{\textwidth}')
+        self.prnt(r'\setlength\LTleft{0pt}')
+        self.prnt(r'\setlength\LTright{0pt}')
+        self.prnt(r'\usepackage{booktabs}')
+        self.prnt(r'\setlength{\heavyrulewidth}{\lightrulewidth}')
+        self.prnt(r'\setlength{\parindent}{0pt}')
+        self.prnt(r'\begin{document}')
+        self.prnt(r'\large')
+        self.start_new_table()
+                
+    def print_linebreak(self, c):
+        self.col = 1
+        if c == 1:
+            self.prnt(r'\\\midrule')
+            if not self.have_header:
+                self.prnt(r'\endhead')
+                self.have_header = True                    
+        else:
+            if self.staffel and c==2:
+                self.prnt(r'\\')
+            else:
+                self.prnt(r'\\*')
+    
+    @staticmethod
+    def maybe_shorten(text, condition, width):
+        if condition and len(text) > width+3:
+            stem = text[:width]+r'\ldots'
+            m = re.match(r'.*?([IV]+)$', text)
+            if m: stem += ' '+m.group(1)       
+            return stem
+        else:
+            return text
+
+    @staticmethod
+    def maybe_split(text, condition):
+        if condition and '/' in text: # split long combined klasse
+            return r'\smash{\begin{tabular}[t]{@{}l@{}}%s\end{tabular}}' % r'\\'.join(text.split('/'))
+        else:
+            return text 
+
+    @staticmethod
+    def maybe_smaller(text, condition):
+        if condition:
+            return r'\footnotesize '+str(text) 
+        else:
+            return text 
+
+    def cell(self, r, c, text, *args):  
+        
+        new_staffel_table = False
+        
+        if str(text).startswith('Staffeln'):
+            self.staffel = True
+            new_staffel_table = self.start_new_table()
+              
+        if self.row is None and self.col is None:
+            assert r == 1 and c == 1
+            self.print_header(text)
+            self.header_text = text
+            self.row  = 3
+            self.col  = c
+        else:
+            if r > self.row and not new_staffel_table:
+                self.print_linebreak(c)
+            for _ in range(self.col, c):
+                self.prnt(r' & ', end='')
+            
+            text = self.maybe_split  (text, c==1)            
+            text = self.maybe_shorten(text, c==3, 21)
+            text = self.maybe_shorten(text, c==4, 30)            
+            text = self.maybe_smaller(text, len(args)==2)            
+                
+            self.prnt(text, end='')          
+            self.row = r
+            self.col = c         
+            
+    def close_table(self):
+        self.prnt(r'\\\bottomrule')
+        self.prnt(r'\end{longtable}')        
+
+    def finish(self):
+        self.close_table() 
+        self.prnt(r'\end{document}')        
+
+def make_backup(filename):
+    if filename.exists():
+        backup = filename.with_suffix('.bak')
+        shutil.copy2(filename, backup)
+    else:
+        backup = None
+
+    return backup
+
+def tex_export_single_zielliste(wettkampf, filename, head, formate, tag):
+    if tag is not None:
+        filename = Path(f"{filename.with_suffix('')}_Tag_{tag}.tex")
+        head     = head + f' \\quad -- \\quad Tag ~ {tag}'
+    
+    backup = make_backup(filename)
+    
+    with codecs.open(str(filename), 'w', encoding="utf8") as latex:
+        write = TexTableWriter(latex)
+        exporter.generic_export(wettkampf, head, write.cell, empty=False, tag=tag)
+        write.finish()
+        
+    
+    _, to_do = prepare_to_run_latex(filename, backup, filename.with_suffix('.pdf'), formate)
+    return to_do
+
+
+def tex_export_zielliste(wettkampf, filename, head, formate):
+
+    to_do = []
+    
+    if wettkampf.has_day_markers():
+        to_do.extend(tex_export_single_zielliste(wettkampf, filename, head, formate, tag=1))
+        to_do.extend(tex_export_single_zielliste(wettkampf, filename, head, formate, tag=2))
+    else:
+        to_do.extend(tex_export_single_zielliste(wettkampf, filename, head, formate, tag=None))
+    
+    return to_do
+

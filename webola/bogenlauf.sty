@@ -1,0 +1,474 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bogenlauf}[2019/03/21]
+
+%\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage[a4paper,margin=7.5mm]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{decorations.text}
+\usetikzlibrary{decorations.pathmorphing}
+\usepackage{graphicx}
+\usepackage{xifthen}
+\usepackage{options}
+\usepackage{xparse}
+\usepackage{gensymb}% \degree
+\usepackage{xspace}
+
+\usepackage{csquotes}
+\MakeOuterQuote{"}
+
+\pagestyle{plain}
+\setlength{\parindent}{0pt}
+
+\usepackage{fontspec}
+%\setmainfont{Arimo}%        without SC support 
+\setmainfont{Alegreya Sans}% with    SC support [LetterSpace=2]
+
+\options{
+  % configure single token
+  /t/.new family,
+  % 
+  bold/.new toggle,
+  scale/.new value = 1,
+  pre/.new value,
+  post/.new value,
+  add/.new cmd 2 = {\options{/t/.cd, pre=#1, post=#2}},
+  hint/.new value,
+  % 
+  % configure bogenlauf result
+  /b/.new family,
+  %
+  staffel/.new value,
+  zeige treffer/.new toggle,
+  zeige strafen/.new toggle,
+  zeige teamname/.new toggle,
+  titel/.new value,
+  datum/.new value,
+  ort/.new value,
+  template/.new value,
+  pos/.new value,
+  name/.new value,
+  klasse/.new value,
+  verein/.new value,
+  vereine/.new value,
+  zeit/.new value,
+  abstand/.new value,
+  fehler/.new value,
+  strafen/.new value,
+  strafzeit/.new value,
+  pfeile/.new value,
+  schiessen/.new value,
+  %
+  % compute more information
+  treffer/.new num,
+  schuss/.new num,
+  gesamt schuss/.new num,
+  gesamt treffer/.new num,
+  compute/.new cmd* = {
+    \pgfmathparse{int(\option{/b/schiessen}*\option{/b/pfeile})}\optionsalso{schuss =\pgfmathresult}%
+    \pgfmathparse{int(\option{/b/schuss}   -\option{/b/fehler})}\optionsalso{treffer=\pgfmathresult}%
+  },
+  team/.new value,
+  urkunde/.new value = Urkunde,
+  gesamt zeit/.new value,
+  gesamt fehler/.new value,
+  gesamt/.new cmd = {%
+    \letoption{/b/#1}\@tmp%
+    \optionsalso{gesamt #1/.expanded=\@tmp}}, 
+}
+
+\newcommand{\datum}[1]{%
+  \gdef\wettkampf@datum{#1}%
+  \ifoptionequal{/b/template}{DM23}{%
+    \options{/b/datum=#1}%
+  }{%
+    \options{/b/datum=am #1}%
+  }%
+}
+\newcommand{\titel}      [1]{\options{/b/titel=#1}}
+\newcommand{\ort}        [1]{\options{/b/ort=#1}}
+\newcommand{\template}   [1]{\options{/b/template=#1}}
+\newcommand{\staffelmode}[1]{\options{/b/staffel=#1}}
+\newcommand{\fehlermode} [1]{%
+  \ifthenelse{\equal{#1}{Treffer}}{%
+    \options{/b/zeige treffer=true}%
+  }{%
+    \options{/b/zeige treffer=false}%
+  }%
+}
+\newcommand{\strafenmode}[1]{%
+  \ifthenelse{\equal{#1}{ohne Strafen}}{%
+    \options{/b/zeige strafen=false}%
+  }{%
+    \options{/b/zeige strafen=true}%
+  }%
+}
+\newcommand{\teamnamemode}[1]{%
+  \ifthenelse{\equal{#1}{ohne Teamname}}{%
+    \options{/b/zeige teamname=false}%
+  }{%
+    \options{/b/zeige teamname=true}%
+  }%
+}
+
+\newcommand{\threedashes}{\ifoptionequal{/b/template}{DM23}{}{---}}
+
+\NewDocumentCommand{\einzel@oder@staffel}{ m }{%
+  \ifthenelse{\equal{#1}{name}}{%
+    % Einzel
+    \platz@und@klasse                              \\[10mm]
+    \ifoptionequal{/b/template}{DM23}{%
+      \token[bold,scale=1.4,add={\threedashes~}{~\threedashes}]{#1}%
+    }{%
+      \token[     scale=1.5,add={\threedashes~}{~\threedashes}]{#1}%
+    }\\[6mm]
+  }{%
+    % Staffel
+    \ifoptionequal{/b/template}{DM23}{%
+      \vspace{-7mm}
+    }{}
+    \platz@und@klasse*                              \\[5mm]
+    \iftoggle{/b/zeige teamname}{%
+      \token[     scale=1,add={\threedashes~~}{~~\threedashes}]{#1}
+    }{%
+      \token[     scale=1,add={\threedashes~~}{~~\threedashes}]{vereine}
+    }    \\[ 5mm]
+  }
+}
+
+\NewDocumentCommand{\urkunde@impl}{ m m }{%
+  \clearpage
+  \bogenlaufPicture
+  \ifoptionequal{/b/template}{DM22}     {\vspace*{40mm}}{
+    \ifoptionequal{/b/template}{DM23}   {
+      \ifthenelse{\equal{#1}{team}}{%
+        \vspace*{92mm}%
+      }{%
+        \vspace*{95mm}
+      }
+    }{%
+  \ifoptionequal{/b/template}{Werder 22}{\vspace*{ 0mm}}{% 
+    \vspace*{10mm}%
+  }}}%
+  \begin{center}
+    \token[bold,scale=2.50                 ]{urkunde}\\[10mm]
+    \ifoptionequal{/b/template}{DM22}{%
+      \token[scale=1.33]{titel}  \\[ 5mm]
+      \scalebox{1.33}{\Huge im Bogenlaufen}
+      \\[ 5mm]
+      \token[     scale=0.75               ]{datum} 
+      \ifoptionblank{/b/ort}{}{%
+        \scalebox{0.75}{\Huge in}
+        \token[     scale=0.75               ]{ort}
+      }\\[10mm]
+    }{%
+      \ifoptionequal{/b/template}{DM23}{%
+      \ifthenelse{\equal{#1}{team}}{%
+        \textsc{\token[scale=1.5]{titel}}  \\[ 3mm]
+        \textsc{\scalebox{1.4}{\Huge im Bogenlaufen \the\year}}
+      }{%
+        \textsc{\token[scale=1.6]{titel}}  \\[ 5mm]
+        \textsc{\scalebox{1.5}{\Huge im Bogenlaufen \the\year}}
+      }\\[ 12mm]
+      }{%
+        \ifoptionequal{/b/template}{Werder 20}{}{\strut\\[15mm]}% 
+        \token[     scale=1.66               ]{titel}  \\[ 5mm]
+        \token[     scale=1.00               ]{datum}  \\[25mm]
+      }}%
+    \ifoptionequal{/b/template}{Werder 20}{% 
+      \platz@und@klasse                              \\[19mm]
+      \token[     scale=1.75,add={\threedashes~}{~\threedashes}]{#1}   \\[ 5mm]
+    }{
+      \einzel@oder@staffel{#1}%
+    }
+    #2
+  \end{center}
+}
+
+\newcommand{\urkunde}[1]{%
+  \options{/b/.cd, #1, compute}
+  \urkunde@impl{name}{%
+    \ifoptionanyof{/b/template}{DM22,DM23}{%
+      \token[scale=0.75            ]{verein} \\[6mm]
+      \token[scale=1,add={}{\,min} ]{zeit}%
+    }{%
+      \token[     scale=1.00                 ]{verein} \\[16mm]
+      \token[     scale=1.50,add={}{\,min}   ]{zeit}
+    }%
+    ~~~
+    \treffer@oder@fehler
+  }
+}
+
+\newcommand{\staffelurkunde}[2]{
+  \options{/b/.cd, #1, compute, gesamt=zeit, gesamt=fehler}%
+  % 
+  % count team members
+  \foreach \x [count=\i] in {#2}{\xdef\anzahl{\i}}%
+  \pgfmathparse{int(\option{/b/schuss}       *\anzahl                  )}\optionsalso{gesamt schuss =\pgfmathresult}%
+  \pgfmathparse{int(\option{/b/gesamt schuss}-\option{/b/gesamt fehler})}\optionsalso{gesamt treffer=\pgfmathresult}%
+  %
+  % team urkunde
+  \ifoptionanyof{/b/staffel}{Team,Einzeln+Team}{%
+    \team@urkunde{0}{#2}%
+  }{}%
+  %
+  % individual urkunde
+  \ifoptionanyof{/b/staffel}{Einzeln,Einzeln+Team}{
+    \foreach \x [count=\i] in {#2}{%
+      \team@urkunde{\i}{#2}%
+    }%
+  }{}% 
+}
+
+\newcommand{\team@urkunde}[2]{%
+  \urkunde@impl{team}{%
+    \ifoptionanyof{/b/template}{DM22,DM23}{%
+      \vspace{1.5mm}
+      \token[scale=1,add={}{\,min.}]{gesamt zeit}
+      ~~~
+      \treffer@oder@fehler*
+      \\[2mm]
+    }{%
+      \vspace{8mm}
+      \token[scale=1.50,add={}{\,min}]{gesamt zeit}
+      ~~~
+      \treffer@oder@fehler*
+      \\[15mm]
+    }%
+    \maybeShrink{\iterateFor{#1}{#2}}%
+  }%
+}
+
+\NewDocumentCommand{\token}{ O{} m }{{%
+    \options{/t/.cd, #1}%
+    \maybeShrink{%
+      \scalebox{\option{/t/scale}}{%
+        \iftoggle{/t/bold}{\bfseries}{}%
+        \Huge%
+        \option{/t/pre}%
+        \option{/b/#2}%
+        \ifoptionblank{/t/hint}{}{\indicate{\option{/t/hint}}}%
+        \option{/t/post}%
+      }%
+    }%
+  }%
+}
+
+\newcommand{\indicate}[1]{%
+  \kern0.5pt\resizebox{!}{1.3ex}{\rotatebox{90}{\color{gray}\scriptsize #1}}%
+}
+
+\NewDocumentCommand{\platz@und@klasse}{ s }{%
+  \ifoptionequal{/b/pos}{-}{%
+    % keine Platzierung ... also "außer Konkurrenz" 
+    \strut\\[3mm]
+    \ifoptionanyof{/b/template}{DM22,DM23}{%
+      \IfBooleanTF{#1}{%
+        % Staffel
+        \token[     scale=1.5                 ]{klasse}\\\strut
+      }{%
+        % Einzel
+        \token[     scale=1                 ]{klasse}
+      }
+    }{%
+      \token[     scale=1.50                 ]{klasse}
+    }%
+  }{%
+    % mit Platzierung
+    \ifoptionanyof{/b/template}{DM22,DM23}{%
+      \token[bold,scale=1.66,add={}{. Platz} ]{pos}   \\[6mm]
+      \token[     scale=0.90                 ]{klasse}
+    }{%
+      \ifoptionequal{/b/template}{Werder 22}{%
+        \token[bold,scale=2.00,add={}{. Platz} ]{pos}   \\[8mm]
+        \token[     scale=1.0                 ]{klasse}
+      }{%
+        \token[bold,scale=2.00,add={}{. Platz} ]{pos}   \\[8mm]
+        \token[     scale=1.50                 ]{klasse}
+      }%
+    }
+  }%
+}
+
+\NewDocumentCommand{\treffer@oder@fehler}{ s t-}{%
+  \IfBooleanTF{#1}{%
+    % Staffelergebnis
+    \def\prefix{gesamt }%
+  }{%
+    % Einzelergebnis
+    \def\prefix{}%
+  }%
+  \IfBooleanTF{#2}{
+    % no scaling, no hints
+    \iftoggle{/b/zeige treffer}{%
+      \token[add={(}{} ]{\prefix treffer}%
+      \token[add={/}{)}]{\prefix schuss}
+    }{%
+      \token[add={(}{)}]{\prefix fehler}
+    }%
+  }{%
+    % full scaling and hints
+    \ifoptionanyof{/b/template}{DM22,DM23}{%
+      \iftoggle{/b/zeige treffer}{%
+        \token[scale=1,add={(}{} ,hint=Treffer]{\prefix treffer}%
+        \token[scale=1,add={/}{)},hint=Schuss ]{\prefix schuss}
+      }{%
+        \token[scale=1,add={(}{)}]{\prefix fehler}
+      }%
+      \iftoggle{/b/zeige strafen}{
+        \\[1ex]\textcolor{gray}{%
+          \ifoptionblank{/b/strafzeit}{}{inkl.\ }%
+          \token[scale=0.5]{strafzeit}}
+        }{}%
+    }{%
+      \iftoggle{/b/zeige treffer}{%
+        \token[scale=1.50,add={(}{} ,hint=Treffer]{\prefix treffer}%
+        \token[scale=1.50,add={/}{)},hint=Schuss ]{\prefix schuss}
+      }{%
+        \token[scale=1.50,add={(}{)}]{\prefix fehler}
+      }% 
+      \iftoggle{/b/zeige strafen}{
+        \\[1ex]\textcolor{gray}{%
+          \ifoptionblank{/b/strafzeit}{}{inkl.\ }%
+          \token[scale=0.75]{strafzeit}}
+      }{}%
+    }% 
+  }%
+}
+
+\newcommand{\phantom@sign}{\Huge\vphantom{$x^2_2$}}
+\newcommand{\tikzNode}[2][]{\tikz[remember picture,baseline=(#2.base)]{\node [outer sep=0pt,inner xsep=2pt,#1] (#2) {\phantom@sign}}}
+\newcommand{\tikzDraw}[2][]{\tikz[remember picture,overlay,line cap=round,#1]{ #2 }}
+
+\newcommand{\redefine@do}[3]{%
+  \renewcommand*{\do}[1]{%
+    \stepcounter{starter}
+    \ifthenelse{\thestarter = #1}{\tikzNode{L}}{\tikzNode{U}}%
+    \options{/b/.cd, ##1}        \token[scale=#2]{name}               &
+    \iftoggle{/b/zeige teamname}{%
+      \options{/b/.cd, ##1}        \token[scale=0.66]{verein}
+    }{} & 
+    \options{/b/.cd, ##1}        \token[scale=#2]{zeit}%
+    \iftoggle{/b/zeige strafen}{%
+      \kern-2pt\raisebox{-0.75ex}{%
+        \textcolor{gray}{\token[scale=0.5]{strafen}}}\kern-8pt}{} &
+    \options{/b/.cd, ##1,compute}\scalebox{#2}{\treffer@oder@fehler-}
+    \ifthenelse{\thestarter = #1}{\tikzNode{R}}{\tikzNode{V}}%
+    \\[#3]
+  }% 
+}
+
+\newcounter{starter}
+\newcommand{\iterateFor}[2]{%
+  \setcounter{starter}{0}%
+  \ifoptionanyof{/b/template}{DM22,DM23}{%
+    \redefine@do{#1}{0.77}{1ex}%  
+  }{%
+    \redefine@do{#1}{1}{3.5ex}%
+  }%
+  \begin{tabular}{l@{\quad\qquad}l@{\quad\qquad}lc}
+    \docsvlist{#2}%
+  \end{tabular}%
+  \ifthenelse{#1>0}{%
+    \tikzDraw{%
+      \path (L.south west) coordinate (LL);
+      \path (R.north east) ++(0,-0.05) coordinate (UR);
+      \draw [rounded corners=10pt,very thick,loosely dashed] (LL)  rectangle  (UR); 
+    }%
+  }{}%
+}
+
+\newcommand{\bogenlaufPictureWerder}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node [yshift=-2.5cm, opacity=1] at (current page.center) {%
+      \includegraphics[width=\textwidth]{resources/bogenlauf.png}%
+    };
+    \node [opacity=1, above left=9mm] at (current page.south east) {%
+      \includegraphics[scale=0.2]{resources/logo2.png}%
+    };
+  \end{tikzpicture}
+}
+
+\NewDocumentCommand{\show@pdf@background}{ s m G{} }{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \IfBooleanTF{#1}{\def\pdf@opacity{0.25}}{\def\pdf@opacity{1.0}}%
+    \node [opacity=\pdf@opacity] at (current page.center) {%
+      \includegraphics[width=\paperwidth,trim=0 0 11 15,clip]{resources/#2}%
+    };
+    #3
+  \end{tikzpicture}    
+}
+
+\newcommand{\wbs@siegel}[1]{% 
+  \node [above=#1] at (current page.south) {%
+    %\includegraphics[scale=0.3]{resources/mustermann.jpg}%
+    \includegraphics[scale=0.5]{resources/unterschrift_sandra.png}%
+  };
+  \path (current page.south) ++(-12.5mm,#1) coordinate (L);        
+  \path (current page.south) ++(+12.5mm,#1) coordinate (R);
+  \path [postaction={ 
+    decorate,decoration={text along path,text align=center,text={|\color{gray}|\wettkampf@datum}
+    }}] (L) to [bend right] (R);
+  \node [opacity=1, above=#1] at (current page.south) {%
+    \includegraphics[scale=0.12]{resources/siegel.png}%
+  };
+}
+
+\newcommand{\bogenlaufPicture}{%
+  \ifoptionequal{/b/template}{Werder 20}{% 
+    \bogenlaufPictureWerder%
+  }{%
+    \ifoptionequal{/b/template}{Werder 22}{%
+      \options{/b/urkunde = {}}% Urkunde is already printed on the paper
+      \options{/b/titel = {}}%
+      \options{/b/datum = {}}%
+      % \show@pdf@background*{Werder_22.pdf}{}%
+      \begin{tikzpicture}[remember picture,overlay]
+        \wbs@siegel{45mm}%
+      \end{tikzpicture}    
+    }{
+      \options{/b/urkunde = {}}% Urkunde is already printed on the paper
+      %\ifoptionanyof{/b/template}{DM22,DM23}{%
+      %  \show@pdf@background{DM_Urkunde.pdf}{}%
+      %}{}%
+      \ifoptionequal{/b/template}{DM23}{%
+        \begin{tikzpicture}[remember picture,overlay]
+          \node [opacity=1, yshift=4cm, 
+          % text width=15cm, minimum height=15cm
+          ] at (current page.south) {%
+            \token[scale=0.7,post={,~}]{ort}
+            \token[scale=0.7]{datum} 
+          };% 
+        \end{tikzpicture}    
+      }{}%
+    }%
+  }%
+}
+
+\newsavebox{\shrinkBox}
+\newdimen\boxdim
+\newcommand{\maybeShrink}[1]{%
+  \sbox{\shrinkBox}{#1}%
+  \settowidth{\boxdim}{\usebox{\shrinkBox}}
+  \ifthenelse{\lengthtest{\linewidth < \boxdim}}{%
+    \resizebox{\linewidth}{!}{\usebox{\shrinkBox}}%
+  }{%
+    \usebox{\shrinkBox}%
+  }%
+}
+
+\newcommand\heighfac{0.8}
+\newcommand{\maybeVShrink}[1]{%
+  \sbox{\shrinkBox}{\raisebox{\depth}{#1}}% tables do have a depth ... shift it up
+  \settoheight{\boxdim}{\usebox{\shrinkBox}}%
+  \ifthenelse{\lengthtest{\heighfac\textheight < \boxdim}}{%
+    \resizebox{!}{\heighfac\textheight}{\usebox{\shrinkBox}}%
+  }{%
+    \usebox{\shrinkBox}%
+  }%
+}
+
+
+
+
