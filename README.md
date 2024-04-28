@@ -4,54 +4,32 @@
 # Einleitung
 
 Webola ist eine Software zur Zeitmessung bei Bogenläufen und ähnlichen
-Veranstaltungen. Neben Python3.6 wird PyQt5 (GPLv3), openpyxl (MIT),
-psutil (BSD-3) und pony (Apache License, Version 2.0) verwendet.
+Veranstaltungen. 
 
-# Installation
+## Installation
 
-Als Python-Programm läuft webola problemlos unter Linux und Windows ...
-Wenn die entsprechenden Pakete vorhanden sind.
+Eine aktuelle Version von **python** kann unter
 
-## Linux
+> https://www.python.org
 
-Unter Linux werden die benötigten Bibliotheken typischerweise wie
-folgt instaliert:
+heruntergeladen werden. Außerdem wird **git** benötigt, um auf das Repository von **webola** zugreifen zu können.
 
-   sudo apt install python3 python3-pyqt5 python3-openpyxl
-   sudo -H pip3 install psutil pony
+> https://git-scm.com
 
-## Windows
+Jetzt kann **webola** direkt von der Eingabeaufforderung installiert werden:
 
-Wenn Windows verwendet werden soll, dann muss ein aktueller
-Python-Installer von
+> pip install git+https://github.com/svoigtmann/webola.git
 
-   www.python.org
-   
-heruntergeladen und installiert werden. Dabei ist darauf zu achten, dass
+## Verwendung
 
-   o PIP mit installiert wird
-   o Python zum Windows-Pfad hinzugefügt wird
-   
-Dann wird z.B. mit Alt+R und cmd eine Eingabeaufforderung gestartet.
-Dort können mit
+**webola** wird mit 
 
-   >> pip3 install pyqt5 openpyxl psutil pony
-   
-die möglicherweise fehlenden Pakete nachinstalliert werden.
+> python -m stackexams <startliste.xlsx>
 
-# Programmstart
-
-Nach dem Entpacken der ZIP-Datei kann webola direkt ausgeführt werden:
-
-   ./webola.py <startliste.xlsx>
-
-oder Doppelklick auf webola.py.
-
-Die Starterliste muss als XlSX-Datei genau das Format der Beispieldatei
+gestartet. Die Starterliste muss als XlSX-Datei genau das Format der Beispieldatei
 'startliste_dummy.xlsx' verwenden.
 
-Mit Strg+F kann in den Vollbildmodus gewechselt werden.
-Mit Strg+- bzw Strg++ wird die Schriftgröße variiert. 
+Mit Strg+F kann in den Vollbildmodus gewechselt werden. Mit Strg+- bzw Strg++ wird die Schriftgröße variiert. 
 
 
 Copyright 2019-2023 <steffen.voigtmann@web.de> GPLv3
