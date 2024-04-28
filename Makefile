@@ -5,6 +5,18 @@ YEAR=$(shell date +%Y)
 DIR=webola-$(DATE)
 REVNO=$(shell bzr revno)
 
+push:
+#	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
+# add ssh-key to gitlab account (avatar -> edit profile) and run 'ssh -T git@github.com'
+	./webola/prepare_version.py
+#	git push origin
+
+install:
+	./webola/prepare_version.py
+	sudo pip uninstall webola
+	python -m build
+#	sudo -H pip install dist/webola-$(VERSION)-py3-none-any.whl
+
 dot: webola/database.png
 
 %.dot: %.py
