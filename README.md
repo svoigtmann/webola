@@ -1,19 +1,18 @@
-WEBOLA -- Werderaner Bogenlauf     (2024.4.28)
-----------xx---------xx---xx--
+WEBOLA -- **We**rderaner **Bo**gen**la**uf     (2024.4.28)
 
 
-EINLEITUNG
+# Einleitung
 
 Webola ist eine Software zur Zeitmessung bei Bogenläufen und ähnlichen
 Veranstaltungen. Neben Python3.6 wird PyQt5 (GPLv3), openpyxl (MIT),
 psutil (BSD-3) und pony (Apache License, Version 2.0) verwendet.
 
-INSTALLATION
+# Installation
 
 Als Python-Programm läuft webola problemlos unter Linux und Windows ...
 Wenn die entsprechenden Pakete vorhanden sind.
 
-LINUX
+## Linux
 
 Unter Linux werden die benötigten Bibliotheken typischerweise wie
 folgt instaliert:
@@ -21,7 +20,7 @@ folgt instaliert:
    sudo apt install python3 python3-pyqt5 python3-openpyxl
    sudo -H pip3 install psutil pony
 
-WINDOWS
+## Windows
 
 Wenn Windows verwendet werden soll, dann muss ein aktueller
 Python-Installer von
@@ -40,7 +39,7 @@ Dort können mit
    
 die möglicherweise fehlenden Pakete nachinstalliert werden.
 
-PROGRAMMSTART
+# Programmstart
 
 Nach dem Entpacken der ZIP-Datei kann webola direkt ausgeführt werden:
 
