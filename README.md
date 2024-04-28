@@ -1,4 +1,4 @@
-WEBOLA -- Werderaner Bogenlauf     Version: __VERSION_TAG__
+WEBOLA -- Werderaner Bogenlauf     (2024.4.28)
 ----------xx---------xx---xx--
 
 
@@ -55,4 +55,4 @@ Mit Strg+F kann in den Vollbildmodus gewechselt werden.
 Mit Strg+- bzw Strg++ wird die Schriftgröße variiert. 
 
 
-Copyright 2019-__YEAR__ <steffen.voigtmann@web.de> GPLv3
+Copyright 2019-2023 <steffen.voigtmann@web.de> GPLv3
