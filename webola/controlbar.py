@@ -184,6 +184,8 @@ class ControlBar(HBoxContainer):
                 'Einzeln+Team': 'einzelne Urkunden und eine Team-Urkunde',
                 'Team'        : 'nur eine Urkunde pro Team'}
 
+        maybe_line = lambda: self.add(Line()) if self.have_latex() else True
+
         self.fullscreen = self.add( ToolButton(':/fullscreen', tip='Vollbildmodus umschalten.<br><b>Tipp:</b> Mit Strg-+ und Strg-- kann die Schriftgröße variiert werden.') )
         self.export   = self.add( NoFocusButton('Export' , False ), tooltip='Ergebnisse exportieren' )
         self.xlsx     = FileSelector('xlsx').add(self)
@@ -193,21 +195,30 @@ class ControlBar(HBoxContainer):
         self.strafen  = self.add( NoFocusComboBox(['ohne Strafen' , 'mit Strafen']   , lambda s: f"Die Urkunden {s.currentText()} ausgeben"  ))
         
         self.maxres_einzel  = self.add( MaxResultsBox('Einzel' ) )
-        self.add(Line())
+        maybe_line()
         self.maxres_staffel = self.add( MaxResultsBox('Staffel') )
         
         self.staffel  = self.add( NoFocusComboBox( sorted(info.keys())               , lambda s: f"Bei Staffeln {info[s.currentText()]} erzeugen"     ))
         self.teamname = self.add( NoFocusComboBox(['ohne Teamname' , 'mit Teamname' ], lambda s: f"Urkunden {s.currentText()} ausgeben"         ))
-        self.add(Line())
+        maybe_line()
         self.max_penalty = self.add( MaxPenaltyBox(dsq_ab) )
-        self.add(Line())
+        maybe_line()
         self.search   = self.add( SearchBox() )
-        self.add(Line())
+        maybe_line()
         self.exit     = self.add( NoFocusButton('Beenden', lambda: True), tooltip="Programm beenden" )        
 
         if self.have_latex():
             self.format.addItem('XLSX+TEX+PDF')
-        
+        else:
+            self.template      .hide()
+            self.mode          .hide()
+            self.strafen       .hide()
+            self.maxres_einzel .hide()
+            self.maxres_staffel.hide() 
+            self.staffel       .hide()
+            self.teamname      .hide()
+            self.max_penalty   .hide()
+
         self.xlsx.do_export.connect(lambda: self.export.click())
         self.template.currentIndexChanged.connect(self.set_default_parameters)
         self.xlsx.edit.setEnabled(False)
