@@ -4,7 +4,7 @@
 #REVNO=$(shell bzr revno)
 VERSION=$(shell date +%Y.%-m.%-d)
 
-push:
+push: requirements.txt
 #	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
 # add ssh-key to gitlab account (avatar -> edit profile) and run 'ssh -T git@github.com'
 	./webola/prepare_version.py
@@ -37,8 +37,7 @@ webola.png:
 #	pydeps webola.py -T png --noshow -xx webola.database
 
 requirements.txt: 
-	@pipreqs --force
-	@sed -i 's/==.*//'      requirements.txt # skip package versions
+	@pipreqs --force --mode no-pin --ignore attic
 	@sed -i '/setuptools/d' requirements.txt # setuptools only needed for packaging
 	@cat requirements.txt
 
