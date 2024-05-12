@@ -164,4 +164,4 @@ Das **webola**-GUI ist (hoffentlich) weitestgehend selbsterklärend. Deshalb nur
 
 
 
-Copyright 2019-2023 <steffen.voigtmann@web.de> GPLv3
+Copyright 2019-2024 <steffen.voigtmann@web.de> GPLv3
