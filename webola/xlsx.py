@@ -49,7 +49,7 @@ def xls_export_zielliste(wettkampf, filename, header, tabs):
         box = QMessageBox(QMessageBox.Critical, 'Export-Fehler',
                     f'Der Excel-Export war nicht möglich:<br><dd>{str(e)}</dd><br>' +
                     'Unter Windows kann z.B. keine bereits geöffnete Excel-Datei neu geschrieben werden. '+
-                    'In diesem Fall muss Excel for dem Export geschlossen werden.<br>'+
+                    'In diesem Fall muss Excel vor dem Export geschlossen werden.<br>'+
                     'Es wird versucht, mögliche weitere Exporte dennoch zu erzeugen.')
         box.setWindowIcon(QIcon(":/webola.png"))
         box.exec()
