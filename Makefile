@@ -7,10 +7,12 @@ VERSION=$(shell date +%Y.%-m.%-d)
 push: requirements.txt
 #	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
 # add ssh-key to gitlab account (avatar -> edit profile) and run 'ssh -T git@github.com'
+	markdown-toc README.md -i
 	./webola/prepare_version.py
 	git push origin
 
 install:
+	markdown-toc README.md -i
 	./webola/prepare_version.py
 	sudo pip uninstall webola
 	python -m build
