@@ -29,8 +29,8 @@ def prepare_version(file):
 def prepare_readme(file):
     with Path(file).open() as f:
         readme = f.read()
-    readme = re.sub(r'WEBOLA -- Werderaner Bogenlauf     \(.*\)'   , f'WEBOLA -- Werderaner Bogenlauf     ({version})', readme)
-    readme = re.sub(r'Copyright 2023-\d\d\d\d', f'Copyright 2023-{today.year}', readme)
+    readme = re.sub(r'\# Webola -- \*We\*rderaner \*Bo\*gen\*la\*uf     \(.*\)'   , f'# Webola -- *We*rderaner *Bo*gen*la*uf     ({version})', readme)
+    readme = re.sub(r'Copyright 2019-\d\d\d\d', f'Copyright 2019-{today.year}', readme)
     with Path(file).open('w') as f:
         f.write(readme)
     return changed(file)
