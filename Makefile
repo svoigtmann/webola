@@ -8,6 +8,7 @@ push: requirements.txt
 #	git remote set-url origin https://svoigtmann:$(TOKEN)@github.com/svoigtmann/webola.git
 # add ssh-key to gitlab account (avatar -> edit profile) and run 'ssh -T git@github.com'
 	markdown-toc README.md -i
+#	grip -b README.md
 	./webola/prepare_version.py
 	git push origin
 
