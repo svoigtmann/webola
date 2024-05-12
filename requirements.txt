@@ -7,5 +7,4 @@ pony
 psutil
 PyQt5
 PyQt5_sip
-PyQt5_sip
 pyzbar
