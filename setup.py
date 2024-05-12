@@ -17,7 +17,7 @@ setup(
     author_email     = 'steffen.voigtmann@web.de',
     license          = 'GPLv3',
     packages         = ['webola'],
-    package_data     = {"webola": ["bogenlauf.sty"]},
+    package_data     = {"webola": ["bogenlauf.sty","startliste_bunt.xlsx","webola/startliste_dummy.xlsx"]},
     install_requires = ['openpyxl', 'pony', 'psutil', 'PyQt5', 'PyQt5_sip', 'PyQt5_sip'],
     classifiers      = [],
 )
