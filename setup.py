@@ -18,6 +18,6 @@ setup(
     license          = 'GPLv3',
     packages         = ['webola'],
     package_data     = {"webola": ["bogenlauf.sty"]},
-    install_requires = ['base45', 'cbor2', 'Flask', 'opencv_python', 'openpyxl', 'pony', 'psutil', 'PyQt5', 'PyQt5_sip', 'pyzbar'],
+    install_requires = ['openpyxl', 'pony', 'psutil', 'PyQt5', 'PyQt5_sip', 'PyQt5_sip'],
     classifiers      = [],
 )
