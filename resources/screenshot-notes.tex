@@ -1,0 +1,52 @@
+\documentclass[tikz]{standalone}
+
+\usepackage{graphicx}
+\usepackage{lbht-tikz}
+
+\begin{document}
+\sf
+\begin{tikzpicture}[scale=1,
+  n/.style={t,align=center}]
+  \node [above right] at (0,0) {\includegraphics[scale=0.5]{screenshot.png}};
+  %\cs[x=0:17, y=0:11]
+  \begin{scope}[bhtgray 1,bhtlightgray,line width=3pt,->]
+    \draw (-1.0,3.0) node [n] {unvollständige\\[-0.5ex]Daten} -- (0.5,4.125); 
+    \draw (-1.0,1.8) node [n] {Startnummer}   -- (1.25,2.1); 
+    \draw ( 0.0,0.9) node [n] {Bogenklasse}   -- (1.20,1.6); 
+    \draw ( 4.5,0.9) node [n] {Verein}        -- (3.50,1.6); 
+    \draw ( 2.5,0.9) node [n] {Name}          -- (2.20,2.1); 
+    \draw ( 6.5,0.9) node [n] {aktuelle Zeit} -- (5.50,2.1); 
+    \draw ( 9.0,0.9) node [n] {Strafrunden}   -- (7.75,2.1); 
+    %
+    \draw (-1.25,-1.25) node [n] {Vollbild\\[-0.5ex]umschalten} -- (0.25,0.25); 
+    \draw ( 0.50,-1.25) node [n] {Zielliste\\[-0.5ex]erzeugen}  -- (1.25,0.25); 
+    \draw ( 2.25,-1.25) node [n] {Name der\\[-0.5ex]Zielliste}  -- (2.25,0.25); 
+    \draw ( 4.00,-1.25) node [n] {neue\\[-0.5ex]Zielliste}      -- (3.70,0.25); 
+    \draw ( 5.75,-1.25) node [n] {Ausgabe\\[-0.5ex]format}      -- (4.50,0.25); 
+    %
+    \draw [rounded corners,-] (5.5,0.125) -- ++(0,-0.25) -- ++(9.66,0) -- ++(0,0.25);
+    \node [n] at (10,-0.5) {Urkunden konfigurieren};
+    %
+    \draw ( 16.5,-1.25) node [n] {Starter/Teams\\[-0.5ex]suchen} -- (15.66,0.25); 
+    %
+    \draw (-1,11.25) node [n] {neuen Lauf\\[-0.5ex]anlegen} -- (0.25,10.5); 
+    \draw (2.75,11.25) node [n] {aktueller\\[-0.5ex]Lauf} -- (1.25,10.5); 
+    \draw (5,11.25) node [n] {Strafrunden\\[-0.5ex]eingeben} -- (6,10); 
+    \draw (9,11.25) node [n] {Starter\\[-0.5ex]hinzufügen} -- (10.1,10); 
+    \draw (12,11.25) node [n] {Ergebnisse\\[-0.5ex]anzeigen} -- (10.5,10.5); 
+    \draw (13.75,11.25) node [n] {Start-\\[-0.5ex]modus} -- (11.5,10); 
+    \draw (15.25,11.25) node [n] {Staffel-\\[-0.5ex]modus} -- (13,10); 
+    \draw (17,11.25) node [n] {Staffelanzeige\\[-0.5ex]umschalten} -- (14.5,10);
+    %%
+    \draw (12,7.5) node [n] {nach dem 3.\ Schießen\\[-0.5ex]... letzte Runde} -- (6.75,9);
+    \draw (12,6) node [n] {nach dem 2.\ Schießen\\[-0.5ex]... noch zwei Runden} -- (6.625,8);
+    \draw (12,4.5) node [n] {nach dem 1.\ Schießen\\[-0.5ex]... noch drei Runden} -- (6.5,7);
+    %%
+    \draw (17,7) node [n] {Lauf starten/\\[-0.5ex]beenden} -- (16.25,9.5);
+    \draw (15,7) node [n] {Sieger-\\[-0.5ex]zeit} -- (14,9);
+  \end{scope}
+\end{tikzpicture}%
+
+
+
+\end{document}
