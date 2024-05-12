@@ -91,7 +91,7 @@ class SheetTab(VBoxContainer):
 
     def scale_font(self, fac=None):
         f = self.header.font()
-        new = 16 if fac is None else round(f.pointSize() * fac) 
+        new = 13 if fac is None else round(f.pointSize() * fac) 
         f.setPointSize(new)
         self.label1.setFont(f)
         self.header.setFont(f)
