@@ -24,6 +24,7 @@ class FileSelector(QObject):
 
         self.edit.setEnabled(False)
         self.edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.icon.setToolTip('Neue Ausgabedatei wählen')
         self.icon.clicked.connect(self.open_file)
         self.icon.setIcon(icon)
 
