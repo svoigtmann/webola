@@ -43,7 +43,10 @@ class TeamButton(SubtitleButton):
 
     def id2k(self, F=False): 
         n   = self.team.key_nummer()
-        key = ('F' if F else '')+str(n % 10)
+        key = str(n % 10)
+        if F:
+            if n in (10,20): key = '10'
+            key = 'F'+key
         if n>10: key = 'Ctrl+'+key
         return key
 
