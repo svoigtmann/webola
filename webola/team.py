@@ -41,22 +41,25 @@ class TeamButton(SubtitleButton):
         self.enable_context_menu(self.context_menu)
         self.lauf.toolbar.display_mode.valueChanged.connect(lambda: self.update())
 
-    def id2s(self): return str(
-            '0' if self.team.key_nummer() == 10 else (
-            'a' if self.team.key_nummer() == 11 else (
-            'b' if self.team.key_nummer() == 12 else ( self.team.key_nummer() ))))
+    def id2k(self, F=False): 
+        n   = self.team.key_nummer()
+        key = ('F' if F else '')+str(n % 10)
+        if n>10: key = 'Ctrl+'+key
+        return key
 
+    def id2f(self): return self.id2k(F=True) 
+        
     def ak  (self): return self.team.tooltip_summary() + ('' if self.team.wertung else " (außer Konkurrenz)") + "\n\n"
-    def mtp (self, fmt): return self.ak() + fmt % (            self.team.key_nummer(),self.id2s()     ) # Make Tool Tip
-    def mtpm(self, fmt): return self.ak() + fmt % (self.id2s(),self.team.key_nummer(),self.id2s()     ) # Make Tool Tip with number in the Middle 
-    def mtpb(self, fmt): return self.ak() + fmt % (self.id2s(),self.id2s()     ,self.team.key_nummer()) # Make Tool Tip with number at the Back
+    def mtp (self, fmt): return self.ak() + fmt % (            self.id2f()) # Make Tool Tip
+    def mtpm(self, fmt): return self.ak() + fmt % (self.id2k(),self.id2f()) # Make Tool Tip with number in the Middle 
+    def mtpb(self, fmt): return self.ak() + fmt % (self.id2k(),self.id2f()) # Make Tool Tip with number at the Back
 
     def update_tooltip(self):
-        if   self.need_start  (): self.setToolTip(self.mtpm('Starten mit %s, F%d oder Linksklick,\nBearbeiten mit ctrl-%s oder Rechtsklick'))
-        elif self.can_stop    (): self.setToolTip(self.mtpm('Schießen markieren mit %s, Stoppen mit F%d oder Linksklick,\nBearbeiten mit ctrl-%s oder Rechtsklick'))
-        elif self.can_restart (): self.setToolTip(self.mtp ('Zurücknehmen mit F%d oder Linksklick,\nBearbeiten mit ctrl-%s oder Rechtsklick'))
-        elif self.lauf.is_done(): self.setToolTip(self.mtpb('Bearbeiten mit %s, ctrl-%s, F%d oder Linksklick'))
-        else:                     self.setToolTip(self.mtpb('Bearbeiten mit %s, ctrl-%s, F%d oder Linksklick\nLöschen oder Einfügen mit Rechtsklick'))
+        if   self.need_start  (): self.setToolTip(self.mtpm('Starten mit %s, %s oder Linksklick,\nBearbeiten mit Rechtsklick'))
+        elif self.can_stop    (): self.setToolTip(self.mtpm('Schießen markieren mit %s, Stoppen mit %s oder Linksklick,\nBearbeiten mit Rechtsklick'))
+        elif self.can_restart (): self.setToolTip(self.mtp ('Zurücknehmen mit %s oder Linksklick,\nBearbeiten mit Rechtsklick'))
+        elif self.lauf.is_done(): self.setToolTip(self.mtpb('Bearbeiten mit %s, %s oder Linksklick'))
+        else:                     self.setToolTip(self.mtpb('Bearbeiten mit %s, %s oder Linksklick\nStarter löschen oder einfügen mit Rechtsklick'))
 
     #def __str__(self): return self.team.string( self.lauf.grid.ergebnis.first() )
     
@@ -92,19 +95,19 @@ class TeamButton(SubtitleButton):
         decrease = lambda: self.lauf.find_and_mark(num, add=-1 )
         
         if self.lauf.is_running():
-            menu.addAction("Bearbeiten", self.edit   , 'Ctrl+%s' %  self.id2s())        
+            menu.addAction("Bearbeiten", self.edit)        
              
             if self.need_start() : 
-                menu.addAction("Start"                  , self.start  , 'F%d'      % num)                          
+                menu.addAction("Start"                  , self.start  , self.id2f())                          
             if self.can_stop()   : 
-                menu.addAction("Stop"                   , self.stop   , 'F%d'      % num)
-                menu.addAction("Schießen markieren"     , increase    , '%s'       % self.id2s())
-                menu.addAction("Markierung zurücknehmen", decrease    , 'Shift+%s' % self.id2s())
+                menu.addAction("Stop"                   , self.stop   , self.id2f())
+                menu.addAction("Schießen markieren"     , increase    , self.id2k())
+                menu.addAction("Markierung zurücknehmen", decrease    , 'Shift+'+self.id2k())
             if self.can_restart(): 
-                menu.addAction("Restart"                , self.restart, 'F%d'      % num)
+                menu.addAction("Restart"                , self.restart, self.id2f())
         
         else: 
-            menu.addAction("Bearbeiten", self.edit   , '%s, Ctrl+%s, F%d' % (self.id2s(),self.id2s(),num))        
+            menu.addAction("Bearbeiten", self.edit   , '%s, %s' % (self.id2k(),self.id2f()))        
             group = get_parent(self , webola.grid.ButtonGroup) 
             grid  = get_parent(group, webola.grid.Grid) 
             run   = get_parent(grid , webola.run.RunTab) 

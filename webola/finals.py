@@ -27,7 +27,7 @@ class FinallaufParametersDialog(OkCancelDialog):
         self.setWindowTitle('Neuer Finallauf')
         self.setMinimumWidth(400)
         self.num_vorlaeufe = num_vorlaeufe
-        self.anzahl = MinMaxSpinBox(num_vorlaeufe,12,max(num_vorlaeufe,10))
+        self.anzahl = MinMaxSpinBox(num_vorlaeufe,20,max(num_vorlaeufe,10))
         self.range  = MinMaxSpinBox(1,3,3)
         self.label  = QLabel()
         self.label.setAlignment(Qt.AlignRight)

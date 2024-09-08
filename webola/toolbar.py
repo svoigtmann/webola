@@ -141,7 +141,7 @@ class ToolBar(HBoxContainer):
         _                   = self.add( QLabel           ('Ziele'       ) )
         self.pfeile         = self.add( MinMaxSpinbox    ( 1,6,  args.pfeile    ), tooltip="Anzahl der Ziele/Pfeile pro Scheiben")
         _                   = self.add( QLabel           ('Starter'     ) )
-        self.anzahl         = self.add( MinMaxSpinbox    ( 0, 12, n     ), tooltip="Anzahl Starter*innen")
+        self.anzahl         = self.add( MinMaxSpinbox    ( 0, 20, n     ), tooltip="Anzahl Starter*innen")
         self.offset_button  = self.add( ToggleButton     ('Auto'        ), tooltip="automatischer oder manueller Start")
         self.offset         = self.add( IncrementSpinbox ( 5, 0         ), tooltip="alle starten gemeinsam ...\noder einzeln mit festem Abstand"
                                                                         ).use(self.offset_button , True )

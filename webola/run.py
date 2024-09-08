@@ -40,7 +40,7 @@ class RunTab(QFrame):
         self.toolbar.log_msg               .connect(log_msg)
         self.grid   .log_msg               .connect(log_msg)
         
-        for k in list("1234567890abcd"): self.make_shortcut(k)
+        self.make_Fn_key_shortcuts()
             
         QShortcut(Qt.Key_Home           , self, lambda: self.toolbar.start.process_click(True ))
         QShortcut(Qt.Key_End            , self, lambda: self.toolbar.start.process_click(False))
@@ -85,16 +85,21 @@ class RunTab(QFrame):
         
     def scale_fonts(self, new): self.grid.scale_fonts(new)
     
-    def make_shortcut(self, key):
-        n   = 10 if key == '0' else (
-              11 if key == 'a' else (
-              12 if key == 'b' else (
-              13 if key == 'c' else (
-              14 if key == 'd' else int(key)))))
-        QShortcut(             Qt.Key_F1+n-1, self, lambda: self.find_and_click(n           )) # start/stop/resart
-        QShortcut(QKeySequence('Ctrl+' +key), self, lambda: self.find_and_click(n, edit=True)) # edit
-        QShortcut(QKeySequence(         key), self, lambda: self.find_and_mark (n           )) # increase round count
-        QShortcut(QKeySequence('Shift+'+key), self, lambda: self.find_and_mark (n, add=-1   )) # decrease round count
+    def make_Fn_key_shortcuts(self):
+        for key in list("1234567890"):
+            n = 10 if key == '0' else int(key)
+            self.make_shortcuts(key, n)
+                        
+        QShortcut(Qt.Key_F11, self, lambda: self.find_and_click(11))
+        QShortcut(Qt.Key_F12, self, lambda: self.find_and_click(12))
+                
+    def make_shortcuts(self, key, n):
+        QShortcut(                  Qt.Key_F1+n-1, self, lambda: self.find_and_click(n           )) #  1-10 start/stop/resart
+        QShortcut(          Qt.CTRL+Qt.Key_F1+n-1, self, lambda: self.find_and_click(n+10        )) # 11-20 start/stop/resart
+        QShortcut(                           key , self, lambda: self.find_and_mark (n           )) #  1-10 increase round count
+        QShortcut(QKeySequence(      'Ctrl+'+key), self, lambda: self.find_and_mark (n+10        )) # 11-20 increase round count
+        QShortcut(QKeySequence('Shift+'     +key), self, lambda: self.find_and_mark (n   , add=-1)) #  1-10 decrease round count
+        QShortcut(QKeySequence('Shift+Ctrl+'+key), self, lambda: self.find_and_mark (n+10, add=-1)) # 11-20 decrease round count
     
     def find_and_mark(self, n, add=1):
         if self.is_running():
