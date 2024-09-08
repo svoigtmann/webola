@@ -98,15 +98,38 @@ Wichtig ist, z.B. bei der Deutschen Meisterschaft bei einzelnen Startern/Teams g
 
 Über das Kontextmenü können neue Starter hinzugefügt oder gelöscht werden. Das Hinzufügen kann oberhalb oder unterhalb des aktuellen Eintrags erfolgen. 
 
-In jedem Lauf können maximal 12 Starter/Teams starten. 
+In jedem Lauf können maximal 20 Starter/Teams starten. 
 
 #### Einen Lauf durchführen
 
-Mit einem Klick auf *Lauf starten* wird der aktuelle Lauf gestartet. Alle Starter/Teams werden für 10 Sekunden grün markiert, um einen erfolgreichen Start zu bestätigen. Die aktuelle Registerkarte wird mit einem * markiert.  
+Mit einem Klick auf *Lauf starten* wird der aktuelle Lauf gestartet. Alle Starter/Teams werden für 10 Sekunden grün markiert, um einen erfolgreichen Start zu bestätigen. Die aktuelle Registerkarte wird mit einem * markiert.
 
-Mit den normalen Zifferntasten *1* bis *9* können Runden für einzelnen Starter/Teams markiert werden. *0* steht für die Nummer *10*, und *a*, *b* stehen für die NUmmer *11* bzw. *12*. Die Anzahl der bereits durchgeführten Schießen wird dann mit jeweils einem Punkt angezeigt. Die Reihenfolge der Starter/Teams wird während des Laufes entsprechend der Rundenmarkierungen/Zeiten angepasst. Der Startet /das Team wird grün/gelb/rot, wenn nach zwei, eins oder kein Schießen mehr offen sind. Die Farbkodierung sichert, dass kein Zieleinlauf verpasst wird. 
+Mit den normalen Zifferntasten können Runden für einzelne Starter/Teams markiert werden. Die Anzahl der bereits durchgeführten Schießen wird dann mit jeweils einem Punkt angezeigt. Die Reihenfolge der Starter/Teams wird während des Laufes entsprechend der Rundenmarkierungen/Zeiten angepasst. Der Starter / das Team wird grün/gelb/rot markiert, wenn noch zwei, eins oder kein Schießen mehr offen sind. Die Farbkodierung sichert, dass kein Zieleinlauf verpasst wird. 
 
-Beim Zieldurchgang wird der Starter / das Team mit der entsprechenden Funktionstaste *F1* bis *F12* abgestoppt. Beim Drücken der Funktionstaste wird die Zeit genommen und der Starter / das Team auf die rechte Seite des Fensters verschoben. Somit ist klar zu erkennen, wie viele Starter/Teams noch auf der Strecke sind. Die Starter/Teams können auch mit einem einfachen Klick abgestoppt werden. 
+| Team Nummer | Schießen markieren | Starten / stoppen |
+| :---------: | :----------------: | :---------------: | 
+|      1      |          1         |       F1          |
+|      2      |          2         |       F2          |
+|      3      |          3         |       F3          |
+|      4      |          4         |       F4          |
+|      5      |          5         |       F5          |
+|      6      |          6         |       F6          |
+|      7      |          7         |       F7          |
+|      8      |          8         |       F8          |
+|      9      |          9         |       F9          |
+|     10      |          0         |       F10         |
+|     11      |     Strg+1         |  Strg+F1 oder F11 |
+|     12      |     Strg+2         |  Strg+F2 oder F12 |
+|     13      |     Strg+3         |  Strg+F3 oder F13 |
+|     14      |     Strg+4         |  Strg+F4 oder F14 |
+|     15      |     Strg+5         |  Strg+F5          |
+|     16      |     Strg+6         |  Strg+F6          |
+|     17      |     Strg+7         |  Strg+F7          |
+|     18      |     Strg+8         |  Strg+F8          |
+|     19      |     Strg+9         |  Strg+F9          |
+|     20      |     Strg+0         |  Strg+F10         |
+
+Beim Zieldurchgang wird der Starter / das Team mit der entsprechenden Funktionstaste *F1* bis *F14* abgestoppt. Mit *Strg+F1* bis *Strg+F10* werden die Nummern 11 bis 20 ausgewählt. Beim Drücken der Funktionstaste wird die Zeit genommen und der Starter / das Team auf die rechte Seite des Fensters verschoben. Somit ist klar zu erkennen, wie viele Starter/Teams noch auf der Strecke sind. Die Starter/Teams können auch mit einem einfachen Klick abgestoppt werden. 
 
 Sollte das falsche Team gestoppt worden sein, kann der Wettkampf durch Anklicken oder durch Drücken der entsprechenden Funktionstaste wieder aufgenommen werden.
 
