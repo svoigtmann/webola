@@ -92,6 +92,8 @@ class RunTab(QFrame):
                         
         QShortcut(Qt.Key_F11, self, lambda: self.find_and_click(11))
         QShortcut(Qt.Key_F12, self, lambda: self.find_and_click(12))
+        QShortcut(Qt.Key_F13, self, lambda: self.find_and_click(13))
+        QShortcut(Qt.Key_F14, self, lambda: self.find_and_click(14))
                 
     def make_shortcuts(self, key, n):
         QShortcut(                  Qt.Key_F1+n-1, self, lambda: self.find_and_click(n           )) #  1-10 start/stop/resart
