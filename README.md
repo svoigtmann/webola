@@ -73,6 +73,7 @@ Zusätzlich zur Startliste können einige wenige Kommandozeilenparameter verwend
 | -s   | --schiessen |  n        | Verwende n Schießen pro Lauf (default: 3)                    |
 | -v   | --vorlaeufe |           | Verwende Vor- und Finalläufe (experimentell)                 |
 | -o   | --output    | file.xlsx | Schreibe alle Auswertungsergebnisse in die Datei *file.xlsx* |
+| -dm  | --dm-mode   |           | Starter mit 'Team Poland', 'Czech Team', 'Archery Club ...' starten außer Konkurrenz |
 
 Beim Einlesen der Starterliste werden Teilnehmende mit dem Verein *Team Poland* bzw. *Czech Team* als *außer Konkurrenz* markiert. Das macht vor allem bei der Deutschen Meisterschaft Sinn ... 
 
