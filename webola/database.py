@@ -82,7 +82,7 @@ class Lauf(db.Entity):
         return vorlaeufe
     
 class Team(db.Entity):
-    nummer    = orm.Required(int, min=1, max=20)
+    nummer    = orm.Required(int, min=1)#, max=20)
     platz     = orm.Optional(int, min=1, max=20)
     lauf      = orm.Required(Lauf)
     name      = orm.Optional(str)
