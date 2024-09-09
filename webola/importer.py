@@ -61,7 +61,7 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row):
                          tab_position = nr-1, 
                          startzeit = str(cell(row,'Startzeit')), finallauf=False)
     
-    for n in range(max_row-row):
+    for n in range(max_row-row+1):
         name   = cell(row+n, 'Name'  )
         verein = cell(row+n, 'Verein')
         klasse = cell(row+n, 'Klasse')
