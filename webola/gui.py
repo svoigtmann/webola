@@ -177,7 +177,7 @@ class WebolaGui(QMainWindow):
     def __init__(self, xlsx, sql, ergebnis, args):
         super().__init__()
         if xlsx: 
-            wettkampf = xlsx2sql(xlsx)
+            wettkampf = xlsx2sql(xlsx, args.dm_mode)
         else:
             wettkampf = read_wettkampf_from_db(sql)
             

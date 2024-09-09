@@ -9,11 +9,11 @@ from webola import database
 from webola.database import db
 
 
-def cell_from_sheet(sheet, row, col, key=None, allow_none=False):
+def cell_from_sheet(sheet, row, col, key=None, allow_none=False, warn=True):
     column = col[key] if key else col
     val = sheet.cell(row=row, column=column).value
     if val is None:
-        print(f"[webola] Missing value in column '{key}' at row {row}")
+        if warn: print(f"[webola] Missing value in column '{key}' at row {row}")
         if allow_none:
             return '' # <UNKNOWN>
         else:
@@ -21,7 +21,13 @@ def cell_from_sheet(sheet, row, col, key=None, allow_none=False):
     else:
         return val.strip() if isinstance(val, str) else val
 
-def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row):
+def wertung_for(name, verein):
+    wertung = verein not in ('Team Poland', 'Czech Team') and not verein.lower().startswith('archery club')
+    if not wertung: 
+        print(f"[webola] WARNING {name:<22} is competing as a non-competer due to verein == '{verein}'." ) 
+    return wertung
+
+def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
     cell = lambda row, key: cell_from_sheet(sheet, row, col, key)
     startzeit = cell_from_sheet(sheet, row, col=2)    
     l    = database.Lauf(name      = "Lauf %d" % nr, 
@@ -34,16 +40,13 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row):
         first  = (sheet.cell(row=row+n, column=1).value or '').strip()
         second = (sheet.cell(row=row+n, column=2).value or '').strip()
         if re.match(r'\d\d-\d\d', first):
-            nummer = cell(row+n, 'Startnummer')
-            num    = int(nummer.split('-')[1])
-            name   = cell(row+n, 'Vorname')+' '+cell(row+n, 'Nachname')
-            verein = cell(row+n, 'Verein')
-            klasse = cell(row+n, 'Klasse')
+            nummer  = cell(row+n, 'Startnummer')
+            num     = int(nummer.split('-')[1])
+            name    = cell(row+n, 'Vorname')+' '+cell(row+n, 'Nachname')
+            verein  = cell(row+n, 'Verein')
+            klasse  = cell(row+n, 'Klasse')
+            wertung = not dm_mode or wertung_for(name, verein)
 
-            wertung = verein not in ('Team Poland', 'Czech Team')
-            if not wertung: 
-                print(f"[webola] WARNING {name:<22} starts outside of the competition due to verein == '{verein}'." ) 
-            
             t = database.Team(nummer=num, lauf=l, wertung=wertung)
             starter = database.Starter(name=name or "", verein=verein or "", klasse=klasse or "",team=t, nummer=1, strafen=0)
             starter.einheit = starter.get_einheit()
@@ -53,8 +56,8 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row):
 
     db.commit()
 
-def create_db_lauf(nr, wettkampf, sheet, row, col, max_row):
-    cell = lambda row, key: cell_from_sheet(sheet, row, col, key, allow_none=True)    
+def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
+    cell = lambda row, key: cell_from_sheet(sheet, row, col, key, allow_none=True, warn=False)    
     l    = database.Lauf(name      = "Lauf %d" % nr, 
                          wettkampf = wettkampf     ,
                          wettkampf_tag = 1,
@@ -66,7 +69,8 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row):
         verein = cell(row+n, 'Verein')
         klasse = cell(row+n, 'Klasse')
         if all([name,verein,klasse]): 
-            t = database.Team(nummer=n+1,lauf=l,wertung=True)
+            wertung = not dm_mode or wertung_for(name, verein)
+            t = database.Team(nummer=n+1,lauf=l,wertung=wertung)
             starter = database.Starter(name=name or "", verein=verein or "", klasse=klasse or "",team=t, nummer=1, strafen=0)
             starter.einheit = starter.get_einheit()
         elif any([name,verein,klasse]): 
@@ -74,7 +78,7 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row):
 
     db.commit()
 
-def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for):
+def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for, dm_mode):
     cell = lambda row, key: cell_from_sheet(sheet, row, col_for, key, allow_none=True)
     l = database.Lauf(name      = "Lauf %d" % run_num, 
                       wettkampf = wettkampf    ,
@@ -93,8 +97,8 @@ def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for
             ageclass  = cell(row, 'Age classes')
             bow       = cell(row, 'Bow')
             klasse    = f"{ageclass} ({gender}) {bow}"
-
-            t = database.Team(nummer=nummer,lauf=l,wertung=True)
+            wertung   = not dm_mode or wertung_for(name, verein)
+            t = database.Team(nummer=nummer,lauf=l,wertung=wertung)
             starter = database.Starter(name=name, verein=verein, klasse=klasse, team=t, nummer=1, strafen=0)
             starter.einheit = starter.get_einheit()
 
@@ -107,7 +111,7 @@ def strip(label):
         text = text[10:].lstrip(': ')
     return text if len(text) else None
 
-def xlsx2sql(filename, column=0):
+def xlsx2sql(filename, dm_mode, column=0):
     info(f"Reading '{filename}'")
     wb = openpyxl.load_workbook(filename, data_only=True)#, read_only=True)
     first = wb.sheetnames[0]
@@ -117,21 +121,21 @@ def xlsx2sql(filename, column=0):
     name = strip(name) if isinstance(name, str) else None
     wettkampf = database.Wettkampf.create(name)
     
-    info(f"Found '{wettkampf.name}'")
+    info(f"Assuming '{wettkampf.name}' ... Change this if necessary.")
     
     cols = list(sheet.columns)
     row_for, runs = parse_xlsx_column(cols[column])
         
     if is_dm_23_format(sheet, runs):
-        return process_dm_23_startlist(sheet, row_for, runs, wettkampf)
+        return process_dm_23_startlist(sheet, row_for, runs, wettkampf, dm_mode)
     elif 'Lauf' in row_for.keys():
-        return process_standard_startlist(sheet, row_for, runs, wettkampf)
+        return process_standard_startlist(sheet, row_for, runs, wettkampf, dm_mode)
     else:
         row_for, runs = parse_xlsx_column(cols[1])
         if 'Run' in row_for.keys():
             # note: runs = [ ... (run,start,invalid) ... ]
             runs = [ (run[0],run[1]) for run in runs ]
-            return process_coloured_startlist(sheet, row_for, runs, wettkampf)
+            return process_coloured_startlist(sheet, row_for, runs, wettkampf, dm_mode)
     
     error(f"I cannot determine format of '{filename.name}'. Please consider using 'startliste_dummy.xlsx' as a template.")
 
@@ -153,14 +157,14 @@ def error(msg):
     box.exec()
     sys.exit(1)
     
-def process_coloured_startlist(sheet, row_for, runs, wettkampf):
+def process_coloured_startlist(sheet, row_for, runs, wettkampf, dm_mode):
     max_row = max(row_for.values())
     col_for = find_header_data(sheet, row_for['Run'], 'Run')
         
     for run_num, row in runs:
         start = find_rows_for_run(sheet, row, max_row, -1)
         stop  = find_rows_for_run(sheet, row, max_row, +1)
-        create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for)
+        create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for, dm_mode)
     
     return wettkampf
 
@@ -172,21 +176,21 @@ def find_rows_for_run(sheet, row, max_row, offset):
     
     return row-offset
 
-def process_dm_23_startlist(sheet, row_for, runs, wettkampf):
+def process_dm_23_startlist(sheet, row_for, runs, wettkampf, dm_mode):
     # dm23 format has no headers ... fake it
     col_for = { v: k for k, v in enumerate(['Startnummer', 'Nachname', 'Vorname', 'Verein', 'Klasse'], 1) } 
     
     for run in runs:
         idx, start, stop = run[0], run[1], run[-1]
-        create_dm23_db_lauf(idx, wettkampf, sheet, start, col_for, stop)
+        create_dm23_db_lauf(idx, wettkampf, sheet, start, col_for, stop, dm_mode)
 
     info(f"Imported {len(runs)} runs")
     return wettkampf
     
-def process_standard_startlist(sheet, row_for, runs, wettkampf):
+def process_standard_startlist(sheet, row_for, runs, wettkampf, dm_mode):
     col_for = find_header_data(sheet, row_for['Lauf'], 'Lauf')
     for run,start,stop in runs:
-        create_db_lauf(run, wettkampf, sheet, start, col_for, stop)
+        create_db_lauf(run, wettkampf, sheet, start, col_for, stop, dm_mode)
 
     return wettkampf
 

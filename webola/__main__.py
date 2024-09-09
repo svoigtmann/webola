@@ -80,11 +80,12 @@ def find_files(filename, force, argv):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='webola -- Werderaner Bogenlauf')
     parser.add_argument("input" , nargs='?', metavar= 'name.xlsx' , help="Starterliste entweder als name.xlsx oder name.sql.")
-    parser.add_argument("-f", "--force"    , action = 'store_true', help="Überschreibe SQL-Datei ohne Nachfrage.")
-    parser.add_argument("-p", "--pfeile"   , metavar= 'n'         , default=4, type=int, help="Anzahl Pfeile")
-    parser.add_argument("-s", "--schiessen", metavar= 'n'         , default=3, type=int, help="Anzahl Schießen")
-    parser.add_argument("-v", "--vorlaeufe", action = 'store_true', help="Verwende Vor- und Finalläufe (experimental)")
-    parser.add_argument("-o", "--output"   , metavar= 'file.xlsx' , help="Ergebnisliste")
+    parser.add_argument("-f" , "--force"    , action = 'store_true', help="Überschreibe SQL-Datei ohne Nachfrage.")
+    parser.add_argument("-p" , "--pfeile"   , metavar= 'n'         , default=4, type=int, help="Anzahl Pfeile")
+    parser.add_argument("-s" , "--schiessen", metavar= 'n'         , default=3, type=int, help="Anzahl Schießen")
+    parser.add_argument("-v" , "--vorlaeufe", action = 'store_true', help="Verwende Vor- und Finalläufe (experimentell)")
+    parser.add_argument("-o" , "--output"   , metavar= 'file.xlsx' , help="Ergebnisliste")
+    parser.add_argument("-dm", "--dm-mode"  , action='store_true'  , help="Starter mit 'Team Poland', 'Czech Team', 'Archery Club ...' starten außer Konkurrenz")
     return parser.parse_args()
 
 def start(cmdline_args):
