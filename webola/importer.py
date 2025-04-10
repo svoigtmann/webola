@@ -223,7 +223,7 @@ def parse_xlsx_column(it):
 
 def find_header_data(sheet, row, key):
         if key == 'Run':
-            need = "AN, Run, Time, Nr, Surname, First name, Nation, Club, Gender, Birthday, Bow, Age, Age classes, Bow" 
+            need = "AN, Run, Time, Nr, Surname, First name, Nation, Club, Gender, Birthday, Age, Age classes, Bow" 
         else:
             need = "Lauf, Startzeit, Startnr., Name, Verein, Klasse"
             
@@ -233,7 +233,7 @@ def find_header_data(sheet, row, key):
         if not ok: 
             print('Need  headers: %s'        % need)
             print('Found headers: %s ... %s' % (have, "OK" if ok else "NOT OK" ))
-            error(f'Das Format der Startliste ist unbekannt:<br><br><b>Erwartet:</b><br>{need}<br><br><b>Gefunden:</b><br>{have}')
+            raise Exception('Header mismatch.')
               
         
         return { k: v for k,v in entries2keys(sheet[row]) } 
