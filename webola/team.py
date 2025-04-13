@@ -9,6 +9,7 @@ from webola.utils import time2str
 from webola.dialogs import AskModified, AskRestart, Edit
 from webola import database
 import webola
+from webola.database import Wertung
 
 def get_parent(base, typ):
     parent = base.parent()
@@ -52,7 +53,7 @@ class TeamButton(SubtitleButton):
 
     def id2f(self): return self.id2k(F=True) 
         
-    def ak  (self): return self.team.tooltip_summary() + ('' if self.team.wertung else " (außer Konkurrenz)") + "\n\n"
+    def ak  (self): return self.team.tooltip_summary() + ('' if self.team.wertung.name == 'Wettkampf' else f" ({self.team.wertung.name})") + "\n\n"
     def mtp (self, fmt): return self.ak() + fmt % (            self.id2f()) # Make Tool Tip
     def mtpm(self, fmt): return self.ak() + fmt % (self.id2k(),self.id2f()) # Make Tool Tip with number in the Middle 
     def mtpb(self, fmt): return self.ak() + fmt % (self.id2k(),self.id2f()) # Make Tool Tip with number at the Back
@@ -317,7 +318,7 @@ if __name__ == '__main__':
     class MockTeam(QObject):
         def __init__(self):
             super().__init__()
-            self.wertung = True
+            self.wertung = Wertung.get(kurzname = 'default')
             self.schiessen = 0
         def zeit(self): return 0
         def has_finished(self): return False

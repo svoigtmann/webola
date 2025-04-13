@@ -4,7 +4,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils.cell import get_column_letter
 from webola.statistik import collect_data
 from webola.database import Team
-from webola.latex import TexTableWriter, StaffelMode
+from webola.latex import StaffelMode
 
 class MockWriter():
     def __init__(self, write_cell):
@@ -183,10 +183,10 @@ def write_platz(row, team, pos, write_cell, style):
     if   team.is_dsq():
         write_cell(row, 2, "DSQ")
     elif team.platz:
-        write_cell(row, 2, ("%d." % pos) if team.wertung else "--", style['center'])
+        write_cell(row, 2, ("%d." % pos) if team.is_ranked() else "--", style['center'])
     elif team.lauf.has_finished():
-        write_cell(row, 2, "DNF")
-    return pos+(1 if team.wertung and not team.is_dsq() else 0)
+        write_cell(row, 2, "DNS" if team.wertung.kurzname == 'DNS' else 'DNF')
+    return pos+(1 if team.is_ranked() and not team.is_dsq() else 0)
 
 def write_result(row, team, sieger, write_cell, style):
     write_cell(row, 6, time2str(team.zeit()), style['center'])

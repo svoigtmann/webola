@@ -51,7 +51,7 @@ class Medaillenspiegel():
                 continue
             for team in Team.sortiere(wertung.teams):
                 maybe_staffel = self.with_staffel or not team.ist_staffel()
-                if maybe_staffel and team.wertung and team.platz:
+                if maybe_staffel and team.is_ranked() and team.platz:
                     pos += 1
                     # we checked before that all staffel starters have the same verein
                     starter = list(team.starter)[0] 
@@ -85,7 +85,7 @@ class Medaillenspiegel():
         if not staffel:
             return None
         for team in staffel:
-            if team.wertung:
+            if team.is_ranked():
                 if len(set(s.verein for s in team.starter)) != 1:
                     return False
         return True

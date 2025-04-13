@@ -143,7 +143,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 sheet.write('Klasse'     , wertung.klasse, newline=True)
                 sheet.write('Name'       , name                  )
                 sheet.write('Verein'     , verein                )
-                sheet.write('Platz'      , "%d" % pos if team.wertung else "-" )
+                sheet.write('Platz'      , "%d" % pos if team.is_ranked() else "-" )
                 sheet.write('Zeit'       , time2str(team.zeit()) )
                 sheet.write('Fehler'     , fehler                )
                 sheet.write('Treffer'    , treffer               )
@@ -174,7 +174,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                         sheet.write('Strafen'    , s.strafen           , starter=idx)
                         sheet.write('Einheit'    , s.einheit           , starter=idx)
                 
-                pos += 1 if team.wertung else 0
+                pos += 1 if team.is_ranked() else 0
 
     write_stand(sheet.xlsx, sheet.row+1, 1, sheet.max_col(), align='left')
 #    stand(row, stop=9)

@@ -6,7 +6,7 @@ import re
 import sys
 
 from webola import database
-from webola.database import db
+from webola.database import db, Wertung
 
 
 def cell_from_sheet(sheet, row, col, key=None, allow_none=False, warn=True):
@@ -23,9 +23,11 @@ def cell_from_sheet(sheet, row, col, key=None, allow_none=False, warn=True):
 
 def wertung_for(name, verein):
     wertung = verein not in ('Team Poland', 'Czech Team') and not verein.lower().startswith('archery club')
-    if not wertung: 
+    if wertung:
+        return Wertung.get(kurzname='default')
+    else:
         print(f"[webola] WARNING {name:<22} is competing as a non-competer due to verein == '{verein}'." ) 
-    return wertung
+        return Wertung.get(kurzname='unranked')
 
 def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
     cell = lambda row, key: cell_from_sheet(sheet, row, col, key)
@@ -97,7 +99,7 @@ def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for
             ageclass  = cell(row, 'Age classes')
             bow       = cell(row, 'Bow')
             klasse    = f"{ageclass} ({gender}) {bow}"
-            wertung   = not dm_mode or wertung_for(name, verein)
+            wertung   = wertung_for(name, verein) if dm_mode else Wertung.get(kurzname='default') 
             t = database.Team(nummer=nummer,lauf=l,wertung=wertung)
             starter = database.Starter(name=name, verein=verein, klasse=klasse, team=t, nummer=1, strafen=0)
             starter.einheit = starter.get_einheit()
@@ -116,6 +118,8 @@ def xlsx2sql(filename, dm_mode, column=0):
     wb = openpyxl.load_workbook(filename, data_only=True)#, read_only=True)
     first = wb.sheetnames[0]
     sheet = wb[first]
+
+    Wertung.create()
 
     name = sheet.cell(row=1, column=1).value
     name = strip(name) if isinstance(name, str) else None

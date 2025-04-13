@@ -178,7 +178,7 @@ class Urkunde():
         self.team   = team
         name, self.verein = team.get_name_verein()
         self.data = ",".join((
-            'pos={%s}'       % (pos if team.wertung else '-'),
+            'pos={%s}'       % (pos if team.is_ranked() else '-'),
             'klasse={%s}'    %  self.texify(key), 
             '%s={%s}'        % (typ, self.texify(name)), 
             'zeit={%s}'      % time2str(team.zeit()), 
@@ -270,7 +270,7 @@ def collect_urkunden_data(latex_data):
                 pages_for[team.lauf].append(urkunde.nummer)
                 urkunden.append(urkunde)
                 
-                pos += 1 if team.wertung else 0
+                pos += 1 if team.is_ranked() else 0
 
     return pages_for, urkunden
  

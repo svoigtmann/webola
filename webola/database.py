@@ -80,7 +80,18 @@ class Lauf(db.Entity):
                 vorlaeufe.add(lauf) 
     
         return vorlaeufe
+
+class Wertung(db.Entity):
+    name     = orm.Required(orm.unicode, unique=True)
+    kurzname = orm.Required(orm.unicode, unique=True)
+    teams    = orm.Set('Team')
     
+    @staticmethod
+    def create():
+        Wertung(name = 'Wettkampf'       , kurzname='default' )
+        Wertung(name = 'außer Konkurrenz', kurzname='unranked')
+        Wertung(name = 'Did Not Start'   , kurzname='DNS'     )
+        
 class Team(db.Entity):
     nummer    = orm.Required(int, min=1)#, max=20)
     platz     = orm.Optional(int, min=1, max=20)
@@ -90,7 +101,7 @@ class Team(db.Entity):
     schiessen = orm.Optional(int, min=0)
     schiessen_time = orm.Optional(float)
     running   = orm.Optional(int)
-    wertung   = orm.Optional(bool)
+    wertung   = orm.Required(Wertung)
     
     def key_nummer  (self): return self.nummer % 100
     def zeit        (self): return sum( s.zeit()   for s in self.starter if s.zeit()   is not None )
@@ -105,14 +116,17 @@ class Team(db.Entity):
         if   self.is_dsq():
             return ("-%2d-" % self.platz) if self.has_finished() else "-"
         elif self.has_finished():
-            return "(%2d)" % self.platz if  self.wertung else "/%2d/" % self.platz
+            return "(%2d)" % self.platz if  self.is_ranked() else "/%2d/" % self.platz
         else:
-            return " "                  if  self.wertung else "/"
+            return " "                  if  self.is_ranked() else "/"
               
     def fehler      (self): 
         liste = [ s.fehler for s in self.starter if s.fehler is not None ]
         return sum( liste ) if liste else 0
     
+    def is_ranked(self):
+        return self.wertung.name == 'Wettkampf'
+        
     def is_dsq(self):
         strafen = max( starter.strafen for starter in self.starter)
         return strafen >= self.lauf.wettkampf.disqualifikation > 0
@@ -320,7 +334,7 @@ if __name__ == '__main__':
         wettkampf = Wettkampf.create('Test')
         lauf      = Lauf(name='Werder', wettkampf=wettkampf, anzahl_schiessen=3, anzahl_pfeile=3, 
                                   auto_start=True, start_offset=0, team_groesse=1, finallauf=False)
-        team      = Team(nummer = 3, lauf = lauf, name = "Werder", wertung=1)
+        team      = Team(nummer = 3, lauf = lauf, name = "Werder", wertung=Wertung.get(kurzname='default'))
         Starter(name='AA', verein='WB', klasse='H Stand', team=team, nummer=1, laufzeit=72, fehler=2, strafen=2, einheit=45)
         Starter(name='AB', verein='WB', klasse='D Stand', team=team, nummer=2, laufzeit=56, fehler=3, strafen=1, einheit=90)
         Starter(team=team, nummer=3, strafen=0)

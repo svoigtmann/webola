@@ -7,7 +7,7 @@ from pony import orm
 from webola import database
 import sys
 from webola.containers import HBoxContainer, VBoxContainer
-from webola.database import Starter, Wettkampf, Lauf
+from webola.database import Starter, Wettkampf, Lauf, Wertung
 from pony.orm.core import commit
 from webola.buttons import NoFocusButton
 
@@ -347,8 +347,10 @@ class WertungCombo(QComboBox):
     def __init__(self, wertung):
         super().__init__()
         self.setFocusPolicy(Qt.NoFocus)
-        self.addItems(['Wettkampf','außer Konkurrenz'])
-        self.setCurrentIndex(0 if wertung else 1)
+        for known in sorted(Wertung.select(), key=lambda w: w.id):
+            self.addItem(known.name, known)
+        
+        self.setCurrentText(wertung.name)
     
     def value(self):
         return self.currentIndex() == 0
@@ -473,7 +475,7 @@ class Edit(OkCancelDialog):
         if self.team.ist_staffel() and self.table.name.text() != self.team.get_name(): 
             self.team.name = self.table.name.text()
         
-        self.team.wertung = self.table.wertung.value()
+        self.team.wertung = self.table.wertung.currentData()
             
         orm.commit()
         
