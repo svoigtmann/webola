@@ -1,5 +1,5 @@
 from PyQt5 import Qt
-from PyQt5.Qt import QTreeWidgetItem, QApplication, QMenu
+from PyQt5.Qt import QTreeWidgetItem, QApplication, QMenu, QColor, QBrush
 from webola.containers import VBoxContainer, HBoxContainer
 from webola.buttons import ToolButton
 from pony import orm
@@ -10,6 +10,7 @@ from webola.exporter import MockWriter
 from pathlib import Path
 from webola.latex import path2urkundepdf
 import subprocess
+from webola.database import UrkundenFertig
 
 
 class SheetTab(VBoxContainer):
@@ -142,7 +143,7 @@ class SheetTab(VBoxContainer):
                         
         item = self.row2item[row]
         
-        if col == 0: self.indicate_wertung_done(item, text)
+        if col == 0 and text: self.indicate_wertung_done(item, text)
             
         item.setData(col, Qt.Qt.DisplayRole, text)
                     
@@ -157,12 +158,21 @@ class SheetTab(VBoxContainer):
             return None
         
     def indicate_wertung_done(self, item, klasse):
-        if klasse:
-            pdf = path2urkundepdf(self.xlsx_file(), klasse)
-            if pdf and pdf.exists():
-                font = item.font(0)
-                font.setBold(True)
-                item.setFont(0, font)
+        pdf = path2urkundepdf(self.xlsx_file(), klasse)
+        if pdf and pdf.exists():
+            font = item.font(0)
+            font.setBold(True)
+            item.setFont(0, font)
+            
+            if UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf):
+                color = 'black'     # Wertung.is_done() ... and was printed 
+            else:
+                color = 'darkgreen' # Wertung.is_done() ... but needs printing
+                
+            item.setForeground(0, QBrush(QColor(color)))
+
+    def urkunden_already_printed(self, item):
+        return item.foreground(0).color() == QColor('black')
         
     def context_menu(self, point):
         if item := self.tree.itemAt(point):
@@ -171,8 +181,23 @@ class SheetTab(VBoxContainer):
                 if pdf and pdf.exists():
                     menu = QMenu()
                     menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
+                    if self.urkunden_already_printed(item):
+                        menu.addAction(f"Urkunden für {klasse} müssen noch gedruckt werden", lambda: self.mark_urkunden_done(item, klasse, False))
+                    else:
+                        menu.addAction(f"Urkunden für {klasse} wurden bereits gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, True))
                     menu.exec(self.tree.mapToGlobal(point))
-    
+
+    def mark_urkunden_done(self, item, klasse, done):
+        fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)
+
+        if done:
+            if not fertig: UrkundenFertig(wertung=klasse, wettkampf=self.webola.wettkampf)
+        else:
+            if     fertig: fertig.delete()
+            
+        self.indicate_wertung_done(item, klasse)
+        orm.commit()
+                
     def run_okular(self, pdf):
         try:
             subprocess.Popen(["okular", str(pdf)], stdout=subprocess.DEVNULL,

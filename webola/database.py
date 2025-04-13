@@ -6,6 +6,11 @@ from webola.utils import time2str
 
 db = orm.Database()
 
+class UrkundenFertig(db.Entity):
+    wertung   = orm.Required(str)
+    wettkampf = orm.Required('Wettkampf')
+    orm.composite_key(wertung, wettkampf) 
+
 class Wettkampf(db.Entity):
     name             = orm.Optional(str)
     datum            = orm.Required(str)
@@ -13,7 +18,8 @@ class Wettkampf(db.Entity):
     disqualifikation = orm.Optional(int)
     vorlaeufe        = orm.Optional(bool)
     laeufe           = orm.Set('Lauf')
-
+    urkunden_fertig  = orm.Set(UrkundenFertig)
+    
     @staticmethod
     def create(name=None):
         if name is None:
