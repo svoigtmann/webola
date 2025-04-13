@@ -5,7 +5,7 @@ from openpyxl.styles.colors import BLACK
 import time
 from webola import utils
 from webola.statistik import Medaillenspiegel, collect_data
-from webola.exporter import Sheet, medaillenspiegel, generic_export
+from webola.exporter import Sheet, medaillenspiegel, generic_export, MockWriter
 from webola.database import Team
 from webola.utils import time2str
 from PyQt5.Qt import QMessageBox, QIcon
@@ -23,7 +23,7 @@ def get_sheet(header, wb):
     sheet = wb.create_sheet(header.replace('/',' ').replace(':',' '), 0)
     sheet.row_dimensions[1].height = 26
     write_cell = lambda r, c, t, *args: write_cell_to_sheet(sheet, r, c, t, STYLE['arial'], *args)
-    return sheet, write_cell
+    return sheet, MockWriter(write_cell)
 
 def xls_export_zielliste(wettkampf, filename, header, tabs):
     try:
@@ -98,12 +98,12 @@ def xlsx_export_serienbrief(wb, data, head, staffel):
         
 def xlsx_export(wb, data, head, name=None):
 
-    sheet, write_cell = get_sheet(name, wb)
+    sheet, writer = get_sheet(name, wb)
     
     toprule = lambda row, start=1, stop=9: create_toprule(sheet, row, start, stop)
     stand   = lambda row, start=1, stop=9: write_stand   (sheet, row, start, stop)
     
-    generic_export(data, head, write_cell, toprule, stand, STYLE)
+    generic_export(data, head, writer, toprule, stand, STYLE)
         
     for col,w in zip('ABCDEFGHI',(22,5,30,30,10,10,10,10,11)):
         sheet.column_dimensions[col].width = w

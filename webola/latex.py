@@ -2,6 +2,7 @@ from webola.utils import time2str, is_linux
 
 import time
 from pathlib import Path
+from enum import Enum
 import codecs
 from PyQt5.Qt import QApplication
 import re
@@ -273,16 +274,21 @@ def collect_urkunden_data(latex_data):
 
     return pages_for, urkunden
  
+class StaffelMode(Enum):
+    Off    = 0
+    Start  = 1
+    Active = 2
+ 
 class TexTableWriter():
     def __init__(self, file):
         self.prnt = lambda msg, end='\n': file.write(str(msg)+end) #print(msg,end=end)
         self.row  = None
         self.col  = None
         self.have_header = False
-        self.staffel = False
+        self.staffel_mode = StaffelMode.Off
 
     def start_new_table(self):
-        if self.staffel: 
+        if self.staffel_mode != StaffelMode.Off: 
             self.close_table()
             self.prnt(r'\newpage')
             self.prnt(r'\fancyhead[L]{\large\bf Ergebnisse (Staffel)\quad -- \quad %s}' % self.header_text)
@@ -290,12 +296,12 @@ class TexTableWriter():
         
         self.prnt(r'\begin{longtable}{@{\,}l@{\extracolsep{\fill}}cl@{~}l@{~}c@{~}ccc@{~}c@{\,}}')
         
-        if self.staffel: self.prnt(r'\midrule')
+        if self.staffel_mode != StaffelMode.Off: self.prnt(r'\midrule')
         
         self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
         self.prnt(r'\endfoot')
         
-        if self.staffel: 
+        if self.staffel_mode != StaffelMode.Off: 
             self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
             self.prnt(r'\endlastfoot')        
             self.prnt(r'& & & & & Zeit & Abstand & Fehler\\\midrule')
@@ -336,10 +342,10 @@ class TexTableWriter():
                 self.prnt(r'\endhead')
                 self.have_header = True                    
         else:
-            if self.staffel and c==2:
-                self.prnt(r'\\')
+            if self.staffel_mode != StaffelMode.Off and c==2:
+                self.prnt(r'\\')  #    allow pagebreak
             else:
-                self.prnt(r'\\*')
+                self.prnt(r'\\*') # disallow pagebreak
     
     @staticmethod
     def maybe_shorten(text, condition, width):
@@ -367,12 +373,9 @@ class TexTableWriter():
 
     def cell(self, r, c, text, *args):  
         
-        new_staffel_table = False
-        
-        if str(text).startswith('Staffeln'):
-            self.staffel = True
-            new_staffel_table = self.start_new_table()
-              
+        if self.staffel_mode == StaffelMode.Start:
+            self.start_new_table()
+            
         if self.row is None and self.col is None:
             assert r == 1 and c == 1
             self.print_header(text)
@@ -380,7 +383,7 @@ class TexTableWriter():
             self.row  = 3
             self.col  = c
         else:
-            if r > self.row and not new_staffel_table:
+            if r > self.row and self.staffel_mode != StaffelMode.Start:
                 self.print_linebreak(c)
             for _ in range(self.col, c):
                 self.prnt(r' & ', end='')
@@ -393,6 +396,9 @@ class TexTableWriter():
             self.prnt(text, end='')          
             self.row = r
             self.col = c         
+            
+        if self.staffel_mode == StaffelMode.Start:
+            self.staffel_mode = StaffelMode.Active
             
     def close_table(self):
         self.prnt(r'\\\bottomrule')
@@ -420,10 +426,9 @@ def tex_export_single_zielliste(wettkampf, filename, head, formate, tag):
     
     with codecs.open(str(filename), 'w', encoding="utf8") as latex:
         write = TexTableWriter(latex)
-        exporter.generic_export(wettkampf, head, write.cell, empty=False, tag=tag)
+        exporter.generic_export(wettkampf, head, write, empty=False, tag=tag)
         write.finish()
         
-    
     _, to_do = prepare_to_run_latex(filename, backup, filename.with_suffix('.pdf'), formate)
     return to_do
 

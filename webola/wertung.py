@@ -6,10 +6,22 @@ class Wertung():
     
     def __init__(self, klasse, teams=None):
         self.klasse = klasse
-        self.teams  = teams or set()
+        
+        if teams:
+            self.teams = teams 
+            found = set( t.ist_staffel() for t in teams )
+            assert len(found) == 1
+            self.ist_staffel = found.pop()
+        else:
+            self.teams = set()
+            self.ist_staffel = None
         
     def add(self, team):
         self.teams.add(team)
+        if self.ist_staffel is None:
+            self.ist_staffel = team.ist_staffel()
+        else:
+            assert self.ist_staffel == team.ist_staffel()
 
     def laeufe(self):
         return { t.lauf for t in self.teams }

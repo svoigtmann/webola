@@ -6,6 +6,7 @@ from pony import orm
 from webola import exporter
 from webola.dialogs import MedaillenSpiegelDisplay 
 from webola.statistik import Medaillenspiegel
+from webola.exporter import MockWriter
 
 
 class SheetTab(VBoxContainer):
@@ -76,10 +77,9 @@ class SheetTab(VBoxContainer):
         self.staffel     = list()
         
         head    = self.header.text()
-        write   = lambda r, c, t, *args: self.write_cell(r, c, t, *args)
         
         # no export, but fill the QTreeWidget ...
-        exporter.generic_export(self.webola.wettkampf, head, write)
+        exporter.generic_export(self.webola.wettkampf, head, MockWriter(self.write_cell))
         
         self.update_after_resize()
         self.scale_staffel_fonts()

@@ -4,7 +4,12 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils.cell import get_column_letter
 from webola.statistik import collect_data
 from webola.database import Team
+from webola.latex import TexTableWriter, StaffelMode
 
+class MockWriter():
+    def __init__(self, write_cell):
+        self.cell = lambda r, c, t, *args: write_cell(r, c, t, *args)
+    
 class Column():
     id         = 0
     write_cell = None
@@ -32,9 +37,9 @@ class Column():
         return self
         
 class Sheet():
-    def __init__(self, xlsx, header, write_cell, team):
+    def __init__(self, xlsx, header, writer, team):
         Column.id         = 0
-        Column.write_cell = write_cell
+        Column.write_cell = writer.cell
         Column.xlsx       = xlsx
         
         self.column    = dict()
@@ -42,7 +47,7 @@ class Sheet():
         self.row       = 3
         self.n_staffel = 0
     
-        write_cell(1, 1, header, Font(name='Arial', size=22))
+        writer.cell(1, 1, header, Font(name='Arial', size=22))
     
         self.add('Klasse'     , 20, 'left'  )
         self.add('Platz'      , 10, 'center')
@@ -86,77 +91,74 @@ class Sheet():
         return max( c.num for c in self.column.values() )
         
         
-def medaillenspiegel(ms, write_cell, toprule, stand, style):
-    write_cell(1,1, 'Medaillenspiegel', style['huge'])
+def medaillenspiegel(ms, writer, toprule, stand, style):
+    writer.cell(1,1, 'Medaillenspiegel', style['huge'])
     
-    write_cell(3,1, f"{ms.starter} Starter:innen bei {ms.meldungen} Meldungen aus {ms.vereine} Vereinen")
+    writer.cell(3,1, f"{ms.starter} Starter:innen bei {ms.meldungen} Meldungen aus {ms.vereine} Vereinen")
     
     toprule(5)
-    write_cell(5,2, "Verein", style['bold'])
-    write_cell(5,3, "Gold"  , style['bold'], style['center'])
-    write_cell(5,4, "Silber", style['bold'], style['center'])
-    write_cell(5,5, "Bronze", style['bold'], style['center'])
+    writer.cell(5,2, "Verein", style['bold'])
+    writer.cell(5,3, "Gold"  , style['bold'], style['center'])
+    writer.cell(5,4, "Silber", style['bold'], style['center'])
+    writer.cell(5,5, "Bronze", style['bold'], style['center'])
     toprule(6)
 
     width = 10    
     for row, verein in enumerate(ms.ergebnisse,6):
         width = max(width, len(verein.verein))
         if verein.first:
-            write_cell(row, 1, verein.position, style['center'])
-        write_cell(row, 2, verein.verein)
-        write_cell(row, 3, verein._gold  , style['center'])
-        write_cell(row, 4, verein._silber, style['center'])
-        write_cell(row, 5, verein._bronze, style['center'])
+            writer.cell(row, 1, verein.position, style['center'])
+        writer.cell(row, 2, verein.verein)
+        writer.cell(row, 3, verein._gold  , style['center'])
+        writer.cell(row, 4, verein._silber, style['center'])
+        writer.cell(row, 5, verein._bronze, style['center'])
     
     stand(row)
     l = len(ms.info)
     idx = ms.info.find(' ', int(l/2))
-    write_cell(row+3, 1, ms.info[:idx], style['tiny'])
-    write_cell(row+4, 1, ms.info[idx:], style['tiny'])
+    writer.cell(row+3, 1, ms.info[:idx], style['tiny'])
+    writer.cell(row+4, 1, ms.info[idx:], style['tiny'])
     
     return width+3
 
-def generic_export(wettkampf_oder_lauf, 
-           header             , 
-           write_cell         , 
+def generic_export(wettkampf_oder_lauf, header, writer, 
            toprule = lambda row, start=1, stop=9: None, 
            stand   = lambda row, start=1, stop=9: None, 
            style   = defaultdict(int),
-           empty   = True,
-           tag     = None
-           ):
+           empty   = True, tag     = None ):
     
-    write_cell(1,1, header, style['huge'])
+    writer.cell(1,1, header, style['huge'])
     
-    row = write_header(write_cell, style['center'])
+    row = write_header(writer.cell, style['center'])
 
     for wertung in collect_data(wettkampf_oder_lauf, empty, tag):
-        pos, sieger, row = 1, None, write_klasse(row, wertung.klasse, write_cell)
+        writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
+        pos, sieger, row = 1, None, write_klasse(row, wertung.klasse, writer.cell)
         toprule(row)
 
         for team in Team.sortiere(wertung.teams):
-            pos = write_platz(row, team, pos, write_cell, style)
-            write_name_verein(row, team, write_cell)
+            pos = write_platz(row, team, pos, writer.cell, style)
+            write_name_verein(row, team, writer.cell)
 
             if team.platz:
                 sieger = sieger or team.zeit()
-                write_result(row, team, sieger, write_cell, style)
+                write_result(row, team, sieger, writer.cell, style)
                 
             row += 1
             if team.ist_staffel():
                 toprule(row-1, start=2)
                 for s in team.liste():
-                    write_cell(row, 3, s.get_name(), style['tiny'], style['vcenter'])
-                    write_cell(row, 4, s.verein    , style['tiny'], style['vcenter'])
+                    writer.cell(row, 3, s.get_name(), style['tiny'], style['vcenter'])
+                    writer.cell(row, 4, s.verein    , style['tiny'], style['vcenter'])
                     if team.has_finished():
                         zeit    = time2str(s.zeit())
                         fehler  = s.fehler or 0
-                        write_cell(row, 5, f"{zeit} [{fehler}]", style['tiny'], style['center' ])
+                        writer.cell(row, 5, f"{zeit} [{fehler}]", style['tiny'], style['center' ])
                         if s.strafen > 0:
                             strafe = f"{s.strafen}x{s.einheit}s = {time2str(s.strafen*s.einheit,zehntel=False)}"
-                            write_cell(row, 9, strafe, style['tiny'], style['center' ])
+                            writer.cell(row, 9, strafe, style['tiny'], style['center' ])
                     else:
-                        write_cell(row, 5, "")
+                        writer.cell(row, 5, "")
                     row += 1
   
     stand(row, stop=9)
