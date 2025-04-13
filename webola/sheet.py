@@ -1,5 +1,5 @@
 from PyQt5 import Qt
-from PyQt5.Qt import QTreeWidgetItem, QApplication
+from PyQt5.Qt import QTreeWidgetItem, QApplication, QMenu
 from webola.containers import VBoxContainer, HBoxContainer
 from webola.buttons import ToolButton
 from pony import orm
@@ -7,6 +7,9 @@ from webola import exporter
 from webola.dialogs import MedaillenSpiegelDisplay 
 from webola.statistik import Medaillenspiegel
 from webola.exporter import MockWriter
+from pathlib import Path
+from webola.latex import path2urkundepdf
+import subprocess
 
 
 class SheetTab(VBoxContainer):
@@ -36,6 +39,10 @@ class SheetTab(VBoxContainer):
         self.header.textChanged.connect(self.commit_header)
         self.date  .textChanged.connect(self.commit_date  )
         self.ort   .textChanged.connect(self.commit_ort  )
+
+
+        self.tree.setContextMenuPolicy(Qt.Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.context_menu)
 
         hbox.setContentsMargins(0,10,0,0)
         self.tree.setHeaderLabels(['Klasse','Platz','Name','Verein','','Zeit','Abstand','Fehler',''])
@@ -123,25 +130,56 @@ class SheetTab(VBoxContainer):
        
         new_parent = col == 0
         
-        if row in self.row2item.keys():
-            item = self.row2item[row]
-        else:
+        if row not in self.row2item.keys():
             parent = self.root_item() if new_parent else self.last_parent            
             if new_parent and self.last_parent != self.root_item():
                 QTreeWidgetItem(self.last_parent) # add empty row
             
-            item   = QTreeWidgetItem(parent)
-
-            if new_parent:             
-                self.last_parent = item
+            item = QTreeWidgetItem(parent)
             self.row2item[row] = item
 
+            if new_parent: self.last_parent = item
+                        
+        item = self.row2item[row]
+        
+        if col == 0: self.indicate_wertung_done(item, text)
+            
         item.setData(col, Qt.Qt.DisplayRole, text)
+                    
         self.set_alignment(item, col)
         
         if col == 4: self.staffel.append(item) # allow to scale fonts later
         
+    def xlsx_file(self):
+        if name := self.webola.control.xlsx.file(dialog=False):
+            return Path(name)
+        else:
+            return None
         
+    def indicate_wertung_done(self, item, klasse):
+        if klasse:
+            pdf = path2urkundepdf(self.xlsx_file(), klasse)
+            if pdf and pdf.exists():
+                font = item.font(0)
+                font.setBold(True)
+                item.setFont(0, font)
+        
+    def context_menu(self, point):
+        if item := self.tree.itemAt(point):
+            if klasse := item.text(0):
+                pdf = path2urkundepdf(self.xlsx_file(), klasse)
+                if pdf and pdf.exists():
+                    menu = QMenu()
+                    menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
+                    menu.exec(self.tree.mapToGlobal(point))
+    
+    def run_okular(self, pdf):
+        try:
+            subprocess.Popen(["okular", str(pdf)], stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, start_new_session=True)
+        except:
+            print("Error starting Okular on '{pdf}'.")
+                        
     def set_alignment(self, item, col=None):
         column_idx = (1,4,5,6,7)
         if col is None:

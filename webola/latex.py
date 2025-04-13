@@ -90,9 +90,9 @@ def prepare_to_run_latex(tex,backup,pdf,formats):
             # copy command differs for Linux/Windows ... correct it later
             to_do.append([f'COPY|{str(tmp)}|{str(pdf)}'])
         
-        return pdf, to_do
+        return to_do
     else:
-        return None, []
+        return []
 
 @nongui
 def generate_medaillenspiegel(xlsx, ms, latex_data):
@@ -133,17 +133,25 @@ def generate_medaillenspiegel(xlsx, ms, latex_data):
         prt(r'\end{document}')
 
     return prepare_to_run_latex(tex, backup, pdf, latex_data.formate)
+
+def path2urkundepdf(path, klasse=None):
+    if path is None: return None
     
+    if klasse:
+        return path.parent / (path.stem + '_Urkunden_' + (klasse.replace(' ','_')+".pdf"))
+    else:
+        return path.parent / (path.stem + '_Urkunden.pdf')
+
 def prepare_latex_export_urkunden(xlsx, ms, latex_data):
     
     to_do = []
     
     pages_for, urkunden = collect_urkunden_data(latex_data)
             
-    _  , ms_cmds = generate_medaillenspiegel(xlsx, ms, latex_data)
-    pdf, u_cmds  = generate_urkunden        (xlsx, urkunden, latex_data)
+    ms_cmds = generate_medaillenspiegel(xlsx, ms, latex_data)
+    u_cmds  = generate_urkunden        (xlsx, urkunden, latex_data)
     
-    if pdf:
+    if 'PDF' in latex_data.formate:        
         to_do.extend(ms_cmds) # call latex to generate Medaillenspiegel
         to_do.extend( u_cmds) # call latex to turn tex into pdf
         
@@ -151,8 +159,10 @@ def prepare_latex_export_urkunden(xlsx, ms, latex_data):
             for wertung in sorted(pages_for.keys()):
                 QApplication.processEvents()
                 pages = ",".join(str(n) for n in pages_for[wertung])
-                out   = pdf.parent / (pdf.stem + '_' + (wertung.klasse.replace(' ','_')+".pdf"))
-                to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
+                pdf   = path2urkundepdf(xlsx)
+                out   = path2urkundepdf(xlsx, wertung.klasse)
+                if pdf and out:
+                    to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
 
     return to_do
 
@@ -426,9 +436,7 @@ def tex_export_single_zielliste(wettkampf, filename, head, formate, tag):
         exporter.generic_export(wettkampf, head, write, empty=False, tag=tag)
         write.finish()
         
-    _, to_do = prepare_to_run_latex(filename, backup, filename.with_suffix('.pdf'), formate)
-    return to_do
-
+    return prepare_to_run_latex(filename, backup, filename.with_suffix('.pdf'), formate)
 
 def tex_export_zielliste(wettkampf, filename, head, formate):
 
