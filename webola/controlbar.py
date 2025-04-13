@@ -177,7 +177,7 @@ class MaxPenaltyBox(NoFocusResultsBox):
         
 class ControlBar(HBoxContainer):
 
-    def __init__(self, dsq_ab, parent=None):
+    def __init__(self, dsq_ab, args, parent=None):
         HBoxContainer.__init__(self, parent)
 
         info = {'Einzeln'     : 'einzelne Urkunde für jede/n Starter*in',
@@ -189,10 +189,10 @@ class ControlBar(HBoxContainer):
         self.fullscreen = self.add( ToolButton(':/fullscreen', tip='Vollbildmodus umschalten.<br><b>Tipp:</b> Mit Strg-+ und Strg-- kann die Schriftgröße variiert werden.') )
         self.export   = self.add( NoFocusButton('Export' , False ), tooltip='Ergebnisse exportieren' )
         self.xlsx     = FileSelector('xlsx').add(self)
-        self.format   = self.add( NoFocusComboBox(['XLSX', 'XLSX+TEX']               , lambda s: f"Beim Export {s.currentText()} exportieren"         ))
-        self.template = self.add( NoFocusComboBox(['DM23', 'Werder 22', 'DM22', 'Werder 20']   , lambda s: f"Verwende '{s.currentText()}'-Template beim Export" ))
-        self.mode     = self.add( NoFocusComboBox(['Fehler' , 'Treffer' ]            , lambda s: f"Bei Urkunden '{s.currentText()}' anzeigen"         ))
-        self.strafen  = self.add( NoFocusComboBox(['ohne Strafen' , 'mit Strafen']   , lambda s: f"Die Urkunden {s.currentText()} ausgeben"  ))
+        self.format   = self.add( NoFocusComboBox(['XLSX', 'XLSX+TEX']            , lambda s: f"Beim Export {s.currentText()} exportieren"         ))
+        self.template = self.add( NoFocusComboBox(['DM', 'Werder']                , lambda s: f"Verwende '{s.currentText()}'-Template beim Export" ))
+        self.mode     = self.add( NoFocusComboBox(['Fehler' , 'Treffer' ]         , lambda s: f"Bei Urkunden '{s.currentText()}' anzeigen"         ))
+        self.strafen  = self.add( NoFocusComboBox(['ohne Strafen' , 'mit Strafen'], lambda s: f"Die Urkunden {s.currentText()} ausgeben"  ))
         
         self.maxres_einzel  = self.add( MaxResultsBox('Einzel' ) )
         maybe_line()
@@ -223,10 +223,13 @@ class ControlBar(HBoxContainer):
         self.template.currentIndexChanged.connect(self.set_default_parameters)
         self.xlsx.edit.setEnabled(False)
         
-        self.set_default_parameters()
+        self.set_default_parameters(index=None, args=args)
         
-    def set_default_parameters(self):
-        key = self.template.currentText()
+    def set_default_parameters(self, index, args=None):
+        if args:
+            key = 'DM' if args.dm_mode else 'Werder'
+        else:
+            key = self.template.currentText()
         if 'DM' in key:
             self.mode    .setCurrentText('Fehler'       )
             self.strafen .setCurrentText('mit Strafen'  )
@@ -234,7 +237,15 @@ class ControlBar(HBoxContainer):
             self.maxres_staffel.setValue(6)
             self.staffel .setCurrentText('Einzeln'      )
             self.teamname.setCurrentText('ohne Teamname')
-        
+        else:
+            self.template.setCurrentText(key)
+            self.mode    .setCurrentText('Fehler'       )
+            self.strafen .setCurrentText('mit Strafen'  )
+            self.maxres_einzel .setValue(0)
+            self.maxres_staffel.setValue(0)
+            self.staffel .setCurrentText('Einzeln'      )
+            self.teamname.setCurrentText('mit Teamname')
+
     def have_latex(self):
         try:
             subprocess.check_output(['pdflatex','-v'])

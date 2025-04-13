@@ -222,7 +222,7 @@ class Webola(QFrame):
         self.top_text_width = None
         self.bot_text_width = None
         self.log       = LogEdit()
-        self.control   = ControlBar(wettkampf.disqualifikation)
+        self.control   = ControlBar(wettkampf.disqualifikation, args)
         self.tabs      = WebolaTabs(self, args)
         self.battery   = CheckBatteryTimer(self)
                 
