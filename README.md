@@ -1,4 +1,4 @@
-# Webola -- *We*rderaner *Bo*gen*la*uf     (2024.9.9)
+# Webola -- *We*rderaner *Bo*gen*la*uf     (2025.4.13)
 
 <!-- toc -->
 
@@ -188,4 +188,4 @@ Das **webola**-GUI ist (hoffentlich) weitestgehend selbsterklärend. Deshalb nur
 
 
 
-Copyright 2019-2024 <steffen.voigtmann@web.de> GPLv3
+Copyright 2019-2025 <steffen.voigtmann@web.de> GPLv3
