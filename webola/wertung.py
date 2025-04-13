@@ -15,7 +15,14 @@ class Wertung():
         else:
             self.teams = set()
             self.ist_staffel = None
+    
+    def is_done(self):
+        if 'Vorlauf' in self.klasse:
+            return False # never consider 'Vorlauf' as a final result
         
+        # all relevant runs must have finished for a Wertung to be done
+        return all( t.lauf.has_finished() for t in self.teams )
+    
     def add(self, team):
         self.teams.add(team)
         if self.ist_staffel is None:

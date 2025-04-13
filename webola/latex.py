@@ -147,14 +147,13 @@ def prepare_latex_export_urkunden(xlsx, ms, latex_data):
         to_do.extend(ms_cmds) # call latex to generate Medaillenspiegel
         to_do.extend( u_cmds) # call latex to turn tex into pdf
         
-        if u_cmds and is_linux:
-            for lauf in sorted(pages_for.keys(), key=lambda l: l.wettkampf_tag*100+l.tab_position):
-                # call pdfjam to select individual pages for every Lauf
+        if u_cmds and is_linux():
+            for wertung in sorted(pages_for.keys()):
                 QApplication.processEvents()
-                pages = ",".join(str(n) for n in pages_for[lauf])
-                out   = (pdf.parent / f"{pdf.stem}_{marker(lauf)}.pdf")
+                pages = ",".join(str(n) for n in pages_for[wertung])
+                out   = pdf.parent / (pdf.stem + '_' + (wertung.klasse.replace(' ','_')+".pdf"))
                 to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
-    
+
     return to_do
 
 def marker(lauf):
@@ -239,15 +238,13 @@ class StaffelUrkunde(Urkunde):
         
 def collect_urkunden_data(latex_data):
 
-    pages_for = {}
-    urkunden  = []
+    pages_for = {}  # collect page numbers relevant for each Wertung 
+    urkunden  = []  # collect all Urkunden belonging to completed Wertung
     
     Urkunde.zaehler = 0
     
     for wertung in collect_data(latex_data.wettkampf):
-        if 'Vorlauf' in wertung.klasse:
-            # no Urkunde for Vorlauf
-            continue
+        if not wertung.is_done(): continue
 
         pos, sieger, klasse = 1, None, wertung.klasse.removesuffix(' (Finallauf)')
                 
@@ -264,10 +261,10 @@ def collect_urkunden_data(latex_data):
                 else:
                     urkunde = EinzelUrkunde (team, pos, klasse, abstand)
                 
-                if team.lauf not in pages_for:
-                    pages_for[team.lauf] = []
+                if wertung not in pages_for:
+                    pages_for[wertung] = []
                 
-                pages_for[team.lauf].append(urkunde.nummer)
+                pages_for[wertung].append(urkunde.nummer)
                 urkunden.append(urkunde)
                 
                 pos += 1 if team.is_ranked() else 0
