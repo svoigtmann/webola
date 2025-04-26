@@ -1,6 +1,4 @@
-from PyQt5.Qt import Qt, QPushButton, QLabel, QVBoxLayout, QToolButton, QIcon,\
-    QWidget
-from webola.containers import VBoxContainer
+from PyQt5.Qt import Qt, QPushButton, QLabel, QVBoxLayout, QToolButton, QIcon
 
 class ToolButton(QToolButton):
     def __init__(self, name, slot=None, tip=None, parent=None):
@@ -44,7 +42,8 @@ class SubtitleButton(NoFocusButton):
         self.setLayout(v)
 
     def scale_fonts(self, new):
-        self.setMinimumHeight(round(45+5*(new-10))) # 10pt => 45, 12pt => 55
+        #self.setMinimumHeight(round(45+5*(new-10))) # 10pt => 45, 12pt => 55
+        self.setMinimumHeight(round(70+5*(new-10))) # 10pt => 70, 12pt => 80 
         for w,fac in zip((self.main, self.sub),(1.125, 0.8)):
             f = w.font()
             f.setPointSize(round(new*fac)) 
