@@ -122,7 +122,7 @@ class Medaillenspiegel():
 def valid(string):
     return string and string != "" 
 
-def collect_data(source, empty=True, tag=None):
+def collect_data(source, empty=True, tag=None, only=None):
     process_single_lauf = isinstance(source, Lauf)
     wettkampf = source.wettkampf if process_single_lauf else source 
     if tag is None:
@@ -138,7 +138,9 @@ def collect_data(source, empty=True, tag=None):
         if t.ist_staffel():
             key = titel if valid(titel) else name
         else:
-            klasse = t.single().klasse 
+            klasse = t.single().klasse
+            if only and only != klasse:
+                continue 
             key = klasse if valid(klasse) else (
                   titel  if valid(titel ) else name )
 
@@ -146,6 +148,7 @@ def collect_data(source, empty=True, tag=None):
             klassen[key] = Wertung(key)
         
         klassen[key].add(t)
+        
 
     wertungen = []
     for wertung in klassen.values():

@@ -134,13 +134,13 @@ def generate_medaillenspiegel(xlsx, ms, latex_data):
 
     return prepare_to_run_latex(tex, backup, pdf, latex_data.formate)
 
-def path2urkundepdf(path, klasse=None):
+def path2urkundepdf(path, klasse=None, typ='Urkunden'):
     if path is None: return None
     
     if klasse:
-        return path.parent / (path.stem + '_Urkunden_' + (klasse.replace(' ','_')+".pdf"))
+        return path.parent / (path.stem + '_' + typ + '_' + (klasse.replace(' ','_')+".pdf"))
     else:
-        return path.parent / (path.stem + '_Urkunden.pdf')
+        return path.parent / (path.stem + '_' + typ + '.pdf')
 
 def prepare_latex_export_urkunden(xlsx, ms, latex_data):
     
@@ -287,33 +287,43 @@ class StaffelMode(Enum):
     Active = 2
  
 class TexTableWriter():
-    def __init__(self, file):
+    def __init__(self, file, show_results=True):
         self.prnt = lambda msg, end='\n': file.write(str(msg)+end) #print(msg,end=end)
         self.row  = None
         self.col  = None
+        self.count = 0
+        self.show_results = show_results
+        self.klasse = None
         self.have_header = False
         self.staffel_mode = StaffelMode.Off
 
     def start_new_table(self):
-        if self.staffel_mode != StaffelMode.Off: 
+        if self.count > 0: 
             self.close_table()
-            self.prnt(r'\newpage')
-            self.prnt(r'\fancyhead[L]{\large\bf Ergebnisse (Staffel)\quad -- \quad %s}' % self.header_text)
-             
+            self.prnt(r'\newpage') 
+            
+        self.count += 1
+            
+        if self.staffel_mode != StaffelMode.Off:             
+            header = 'Ergebnisse' if self.show_results else 'Liste'
+            self.prnt(r'\fancyhead[L]{\large\bf %s (Staffel)\quad -- \quad %s}' % (header, self.klasse))
         
-        self.prnt(r'\begin{longtable}{@{\,}l@{\extracolsep{\fill}}cl@{~}l@{~}c@{~}ccc@{~}c@{\,}}')
-        
-        if self.staffel_mode != StaffelMode.Off: self.prnt(r'\midrule')
-        
+        self.prnt(r'\begin{longtable}{@{\,}l@{\extracolsep{\fill}}cl@{~}l@{~}c@{~}ccc@{~}c@{\,}}')              
+                
         self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
         self.prnt(r'\endfoot')
         
         if self.staffel_mode != StaffelMode.Off: 
             self.prnt(r'\multicolumn{9}{r@{\,}}{\footnotesize Stand: %s}' % time.strftime("%d. %B %Y, %H:%M Uhr", time.localtime()))
             self.prnt(r'\endlastfoot')        
-            self.prnt(r'& & & & & Zeit & Abstand & Fehler\\\midrule')
+            if self.show_results:
+                self.prnt(r'& & & & & Zeit & Abstand & Fehler\\\midrule')
+            else:
+                self.prnt(r'\\\midrule')
             self.prnt(r'\endhead')
         
+        if self.staffel_mode == StaffelMode.Off: self.prnt(r'\midrule')
+
         return True
 
     def print_header(self, text):
@@ -321,7 +331,7 @@ class TexTableWriter():
         self.prnt(r'\usepackage{fontspec}')
         self.prnt(r'\setmainfont{Alegreya Sans}') 
         self.prnt(r'\usepackage{lastpage}')
-        self.prnt(r'\usepackage[a4paper,landscape, headheight=18pt, margin=10mm, top=18mm, headsep=5mm]{geometry}')
+        self.prnt(r'\usepackage[a4paper, %s, headheight=18pt, margin=10mm, top=18mm, headsep=5mm]{geometry}' % ('landscape' if self.show_results else ''))
         self.prnt(r'\usepackage{fancyhdr}')
         self.prnt(r'\fancyhf{}')  
         self.prnt(r'\fancypagestyle{plain}{}') 
@@ -343,9 +353,9 @@ class TexTableWriter():
                 
     def print_linebreak(self, c):
         self.col = 1
-        if c == 1:
+        if c == 1 or (c==2 and not self.show_results):
             self.prnt(r'\\\midrule')
-            if not self.have_header:
+            if c==1 and not self.have_header:
                 self.prnt(r'\endhead')
                 self.have_header = True                    
         else:
@@ -378,9 +388,16 @@ class TexTableWriter():
         else:
             return text 
 
+    @staticmethod
+    def use_large(text, bold = False):
+        if bold:
+            return r'\Large\textbf{'+str(text)+'}'
+        else: 
+            return r'\Large '+str(text)
+
     def cell(self, r, c, text, *args):  
         
-        if self.staffel_mode == StaffelMode.Start:
+        if self.staffel_mode == StaffelMode.Start and self.count > 0:
             self.start_new_table()
             
         if self.row is None and self.col is None:
@@ -394,13 +411,20 @@ class TexTableWriter():
                 self.print_linebreak(c)
             for _ in range(self.col, c):
                 self.prnt(r' & ', end='')
-            
-            text = self.maybe_split  (text, c==1)            
-            text = self.maybe_shorten(text, c==3, 21)
-            text = self.maybe_shorten(text, c==4, 30)            
-            text = self.maybe_smaller(text, len(args)==2)            
-                
-            self.prnt(text, end='')          
+
+            staffel = self.staffel_mode != StaffelMode.Off
+            skip_details = c < 4 or  (c<5 and len(args)==2)
+
+            if self.show_results or (staffel and skip_details) or (not staffel and c<5):
+                text = self.maybe_split  (text, c==1)            
+                text = self.maybe_shorten(text, c==3, 21)
+                text = self.maybe_shorten(text, c==4, 30)            
+                if self.show_results:
+                    text = self.maybe_smaller(text, len(args)==2)
+                else:                        
+                    text = self.use_large(text, bold = staffel and len(args)!=2)
+                    
+                self.prnt(text, end='')          
             self.row = r
             self.col = c         
             

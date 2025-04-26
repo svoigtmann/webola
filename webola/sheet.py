@@ -5,12 +5,18 @@ from webola.buttons import ToolButton
 from pony import orm
 from webola import exporter
 from webola.dialogs import MedaillenSpiegelDisplay 
-from webola.statistik import Medaillenspiegel
-from webola.exporter import MockWriter
+from webola.statistik import Medaillenspiegel, collect_data
+from webola.exporter import MockWriter, generic_export_wertung
 from pathlib import Path
-from webola.latex import path2urkundepdf
+from webola.latex import path2urkundepdf, TexTableWriter, StaffelMode,\
+    prepare_to_run_latex, make_backup
 import subprocess
-from webola.database import UrkundenFertig
+from webola.database import UrkundenFertig, Team
+import sys
+import codecs
+from webola.utils import have_latex
+from webola.runner import ExportThread
+from stvo.gui.utils import with_wait_cursor
 
 
 class SheetTab(VBoxContainer):
@@ -179,19 +185,47 @@ class SheetTab(VBoxContainer):
 
     def urkunden_already_printed(self, item):
         return item.foreground(0).color() == QColor('black')
+
+    @with_wait_cursor        
+    def generate_starter_list(self, klasse, pdf):
+        wertungen = collect_data(self.webola.wettkampf, only=klasse)
+        wertung = [ w for w in wertungen if w.klasse == klasse]
+        if len(wertung) != 1:
+            print(f'[warn] Found {", ".join(w.klasse for w in wertung)}')
+            return
+        
+        tex = pdf.with_suffix('.tex')
+        backup = make_backup(tex)
+        
+        with codecs.open(str(tex), 'w', encoding="utf8") as latex:
+            writer = TexTableWriter(latex, show_results=False)
+            generic_export_wertung(wertung[0], writer)
+            writer.finish()
+       
+        to_do = prepare_to_run_latex(tex, backup,pdf,['PDF'])    
+       
+        self.webola.exporter  = ExportThread(to_do)
+        self.webola.exporter.start_work() # run in foreground 
+        self.run_okular(pdf)
         
     def context_menu(self, point):
+        if not have_latex(): return 
+        
         if item := self.tree.itemAt(point):
             if klasse := item.text(0):
-                pdf = path2urkundepdf(self.xlsx_file(), klasse)
+                menu = QMenu()
+                pdf = path2urkundepdf(self.xlsx_file(), klasse, typ='Starterliste')
+                menu.addAction(f"{pdf.name} anzeigen", lambda: self.generate_starter_list(klasse, pdf))
+                
+                pdf = path2urkundepdf(self.xlsx_file(), klasse, typ='Urkunden')
                 if pdf and pdf.exists():
-                    menu = QMenu()
                     menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
                     if self.urkunden_already_printed(item):
                         menu.addAction(f"Setze Status: Urkunden für {klasse} noch nicht gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, False))
                     else:
                         menu.addAction(f"Setze Status: Urkunden für {klasse} wurden bereits gedruckt", lambda: self.mark_urkunden_done(item, klasse, True))
-                    menu.exec(self.tree.mapToGlobal(point))
+                
+                menu.exec(self.tree.mapToGlobal(point))
 
     def mark_urkunden_done(self, item, klasse, done):
         fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)

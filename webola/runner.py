@@ -47,7 +47,10 @@ class ExportThread(QThread):
         self.error = None
         
     def run(self):
-        print(f"--- Export {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} ---")    
+        print(f"--- Export {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} ---")
+        self.start_work()
+        
+    def start_work(self):
         for cmds in self.to_do:
             if len(cmds)==1 and cmds[0].startswith('COPY'):
                 a, b = cmds[0].split('|')[1:]
