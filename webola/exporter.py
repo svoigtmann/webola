@@ -132,36 +132,44 @@ def generic_export(wettkampf_oder_lauf, header, writer,
     row = write_header(writer.cell, style['center'])
 
     for wertung in collect_data(wettkampf_oder_lauf, empty, tag):
-        writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
-        pos, sieger, row = 1, None, write_klasse(row, wertung.klasse, writer.cell)
-        toprule(row)
-
-        for team in Team.sortiere(wertung.teams):
-            pos = write_platz(row, team, pos, writer.cell, style)
-            write_name_verein(row, team, writer.cell)
-
-            if team.platz:
-                sieger = sieger or team.zeit()
-                write_result(row, team, sieger, writer.cell, style)
-                
-            row += 1
-            if team.ist_staffel():
-                toprule(row-1, start=2)
-                for s in team.liste():
-                    writer.cell(row, 3, s.get_name(), style['tiny'], style['vcenter'])
-                    writer.cell(row, 4, s.verein    , style['tiny'], style['vcenter'])
-                    if team.has_finished():
-                        zeit    = time2str(s.zeit())
-                        fehler  = s.fehler or 0
-                        writer.cell(row, 5, f"{zeit} [{fehler}]", style['tiny'], style['center' ])
-                        if s.strafen > 0:
-                            strafe = f"{s.strafen}x{s.einheit}s = {time2str(s.strafen*s.einheit,zehntel=False)}"
-                            writer.cell(row, 9, strafe, style['tiny'], style['center' ])
-                    else:
-                        writer.cell(row, 5, "")
-                    row += 1
+        row = generic_export_wertung(wertung, writer, row, toprule, style)
   
     stand(row, stop=9)
+
+def generic_export_wertung(wertung, writer, row=0, 
+                           toprule = lambda row, start=1, stop=9: None, 
+                           style   = defaultdict(int)):
+        
+    writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
+    writer.klasse       = wertung.klasse
+    pos, sieger, row = 1, None, write_klasse(row, wertung.klasse, writer.cell)
+    toprule(row)
+
+    for team in Team.sortiere(wertung.teams):
+        pos = write_platz(row, team, pos, writer.cell, style)
+        write_name_verein(row, team, writer.cell)
+
+        if team.platz:
+            sieger = sieger or team.zeit()
+            write_result(row, team, sieger, writer.cell, style)
+            
+        row += 1
+        if team.ist_staffel():
+            toprule(row-1, start=2)
+            for s in team.liste():
+                writer.cell(row, 3, s.get_name(), style['tiny'], style['vcenter'])
+                writer.cell(row, 4, s.verein    , style['tiny'], style['vcenter'])
+                if team.has_finished():
+                    zeit    = time2str(s.zeit())
+                    fehler  = s.fehler or 0
+                    writer.cell(row, 5, f"{zeit} [{fehler}]", style['tiny'], style['center' ])
+                    if s.strafen > 0:
+                        strafe = f"{s.strafen}x{s.einheit}s = {time2str(s.strafen*s.einheit,zehntel=False)}"
+                        writer.cell(row, 9, strafe, style['tiny'], style['center' ])
+                else:
+                    writer.cell(row, 5, "")
+                row += 1
+    return row
     
 def write_header(write_cell, center):
     row = 3
