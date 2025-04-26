@@ -138,7 +138,7 @@ def path2urkundepdf(path, klasse=None, typ='Urkunden'):
     if path is None: return None
     
     if klasse:
-        return path.parent / (path.stem + '_' + typ + '_' + (klasse.replace(' ','_')+".pdf"))
+        return path.parent / (path.stem + '_' + typ + '_' + (klasse.replace(' ','_').replace('/','_')+".pdf"))
     else:
         return path.parent / (path.stem + '_' + typ + '.pdf')
 
@@ -335,7 +335,7 @@ class TexTableWriter():
         self.prnt(r'\usepackage{fancyhdr}')
         self.prnt(r'\fancyhf{}')  
         self.prnt(r'\fancypagestyle{plain}{}') 
-        self.prnt(r'\fancyhead[L]{\large\bf Ergebnisse\quad -- \quad %s}' % text)
+        self.prnt(r'\fancyhead[L]{\large\bf %s\quad -- \quad %s}' % ('Ergebnisse' if self.show_results else 'Liste', text))
         self.prnt(r'\fancyhead[R]{\footnotesize Seite \thepage\ von \pageref{LastPage}}') 
         self.prnt(r'\pagestyle{plain}') 
         self.prnt(r'\usepackage{csquotes}')
