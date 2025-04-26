@@ -228,11 +228,13 @@ def parse_xlsx_column(it):
 
 def find_header_data(sheet, row, key):
         if key == 'Run':
-            need = "AN, Run, Time, Nr, Surname, First name, Nation, Club, Gender, Birthday, Bow, Age, Age classes, Bow" 
+            need = "AN, Run, Time, Nr, Surname, First name, Nation, Club, Gender, Birthday, Age, Age classes, Bow" 
         else:
             need = "Lauf, Startzeit, Startnr., Name, Verein, Klasse"
             
-        have = ", ".join([ c.value.strip() for c in sheet[row] if c.value is not None])
+        have = [ c.value.strip() for c in sheet[row] if c.value is not None]
+        have = reversed(list(dict.fromkeys(reversed(have)))) # remove duplicates, but keep the *final* entry
+        have = ", ".join(have)
         ok   = need == have
                 
         if not ok: 
