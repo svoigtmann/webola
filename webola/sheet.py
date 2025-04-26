@@ -8,11 +8,8 @@ from webola.dialogs import MedaillenSpiegelDisplay
 from webola.statistik import Medaillenspiegel, collect_data
 from webola.exporter import MockWriter, generic_export_wertung
 from pathlib import Path
-from webola.latex import path2urkundepdf, TexTableWriter, StaffelMode,\
-    prepare_to_run_latex, make_backup
+from webola.latex import path2urkundepdf, TexTableWriter, prepare_to_run_latex, make_backup
 import subprocess
-from webola.database import UrkundenFertig, Team
-import sys
 import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
