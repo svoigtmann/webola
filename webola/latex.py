@@ -353,8 +353,16 @@ class TexTableWriter():
                 
     def print_linebreak(self, c):
         self.col = 1
+        staffel = self.staffel_mode == StaffelMode.Active
         if c == 1 or (c==2 and not self.show_results):
-            self.prnt(r'\\\midrule')
+            if c==2:
+                if staffel:
+                    self.prnt(r'\\\midrule')
+                else:
+                    self.prnt(r'\\\addlinespace[5mm]')
+            else:
+                self.prnt(r'\\\midrule')
+                
             if c==1 and not self.have_header:
                 self.prnt(r'\endhead')
                 self.have_header = True                    
