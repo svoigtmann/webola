@@ -14,6 +14,7 @@ import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
 from stvo.gui.utils import with_wait_cursor
+from webola.database import UrkundenFertig
 
 
 class SheetTab(VBoxContainer):
@@ -196,7 +197,7 @@ class SheetTab(VBoxContainer):
         
         with codecs.open(str(tex), 'w', encoding="utf8") as latex:
             writer = TexTableWriter(latex, show_results=False)
-            generic_export_wertung(wertung[0], writer)
+            generic_export_wertung(wertung[0], writer, number=True)
             writer.finish()
        
         to_do = prepare_to_run_latex(tex, backup,pdf,['PDF'])    
@@ -211,8 +212,8 @@ class SheetTab(VBoxContainer):
         if item := self.tree.itemAt(point):
             if klasse := item.text(0):
                 menu = QMenu()
-                if pdf := path2urkundepdf(self.xlsx_file(), klasse, typ='Starterliste'):
-                    menu.addAction(f"{pdf.name} anzeigen", lambda: self.generate_starter_list(klasse, pdf))
+                if liste := path2urkundepdf(self.xlsx_file(), klasse, typ='Starterliste'):
+                    menu.addAction(f"{liste.name} anzeigen", lambda: self.generate_starter_list(klasse, liste))
                 
                 if pdf := path2urkundepdf(self.xlsx_file(), klasse, typ='Urkunden'):
                     if pdf.exists():
