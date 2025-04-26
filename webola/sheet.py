@@ -214,18 +214,19 @@ class SheetTab(VBoxContainer):
         if item := self.tree.itemAt(point):
             if klasse := item.text(0):
                 menu = QMenu()
-                pdf = path2urkundepdf(self.xlsx_file(), klasse, typ='Starterliste')
-                menu.addAction(f"{pdf.name} anzeigen", lambda: self.generate_starter_list(klasse, pdf))
+                if pdf := path2urkundepdf(self.xlsx_file(), klasse, typ='Starterliste'):
+                    menu.addAction(f"{pdf.name} anzeigen", lambda: self.generate_starter_list(klasse, pdf))
                 
-                pdf = path2urkundepdf(self.xlsx_file(), klasse, typ='Urkunden')
-                if pdf and pdf.exists():
-                    menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
-                    if self.urkunden_already_printed(item):
-                        menu.addAction(f"Setze Status: Urkunden für {klasse} noch nicht gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, False))
-                    else:
-                        menu.addAction(f"Setze Status: Urkunden für {klasse} wurden bereits gedruckt", lambda: self.mark_urkunden_done(item, klasse, True))
+                if pdf := path2urkundepdf(self.xlsx_file(), klasse, typ='Urkunden'):
+                    if pdf.exists():
+                        menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
+                        if self.urkunden_already_printed(item):
+                            menu.addAction(f"Setze Status: Urkunden für {klasse} noch nicht gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, False))
+                        else:
+                            menu.addAction(f"Setze Status: Urkunden für {klasse} wurden bereits gedruckt", lambda: self.mark_urkunden_done(item, klasse, True))
                 
-                menu.exec(self.tree.mapToGlobal(point))
+                if menu.actions():
+                    menu.exec(self.tree.mapToGlobal(point))
 
     def mark_urkunden_done(self, item, klasse, done):
         fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)
