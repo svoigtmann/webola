@@ -59,6 +59,7 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
     db.commit()
 
 def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
+    db.commit()
     cell = lambda row, key: cell_from_sheet(sheet, row, col, key, allow_none=True, warn=False)    
     l    = database.Lauf(name      = "Lauf %d" % nr, 
                          wettkampf = wettkampf     ,
