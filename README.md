@@ -25,7 +25,7 @@ Das Hauptfenster ist für jeden Lauf zweigeteilt: Zunächst werden alle Starter/
 
 Während des Laufes oder nach Abschluss des Laufen können Strafrunden und ggf. Strafzeiten eingetragen werden. Ergebislisten mit Zeiten und Abständen werden automatisch erstellt. Die Daten können als XLSX-Datei exportiert werden. Wenn LaTeX vorhanden ist, können auch Urkunden automatisch als PDF-Dateien erstellt werden.
 
-![Webola GUI](https://github.com/svoigtmann/webola/blob/main/resources/screenshot-notes.pdf)
+![Webola GUI](/resources/screenshot-notes.png)
 
 
 ## Installation
