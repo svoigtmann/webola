@@ -138,7 +138,7 @@ def generic_export(wettkampf_oder_lauf, header, writer,
 
 def generic_export_wertung(wertung, writer, row=0, 
                            toprule = lambda row, start=1, stop=9: None, 
-                           style   = defaultdict(int)):
+                           style   = defaultdict(int), number = False):
         
     writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
     writer.klasse       = wertung.klasse
@@ -146,7 +146,11 @@ def generic_export_wertung(wertung, writer, row=0,
     toprule(row)
 
     for team in Team.sortiere(wertung.teams):
-        pos = write_platz(row, team, pos, writer.cell, style)
+        if number:
+            writer.cell(row, 2, team.nummer)
+            pos += 1
+        else:
+            pos = write_platz(row, team, pos, writer.cell, style)
         write_name_verein(row, team, writer.cell)
 
         if team.platz:
