@@ -34,7 +34,7 @@ Während des Laufes oder nach Abschluss des Laufen können Strafrunden und ggf. 
 
 > https://www.python.org
 
-heruntergeladen und installiert werden. Dabei ist darauf zu achten, dass **pip** mitinstalliert wird und dass **python** zur Pfadvariablen hinzugefügt wird. 
+heruntergeladen und installiert werden (Version 3.12). Dabei ist darauf zu achten, dass **pip** mitinstalliert wird und dass **python** zur Pfadvariablen hinzugefügt wird. 
 
 Neben **python** wird noch **git** benötigt, um auf das Repository von **webola** zugreifen zu können. Beim Installieren von **git** können alle voreingestellten Optionen unverändert bleiben:
 
