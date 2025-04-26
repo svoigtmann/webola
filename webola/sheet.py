@@ -159,9 +159,7 @@ class SheetTab(VBoxContainer):
         
     def indicate_wertung_done(self, item, klasse):
         pdf = path2urkundepdf(self.xlsx_file(), klasse)
-        if pdf:
-            item.setToolTip(0,'Wertung ist abgeschlossen')
-        elif pdf and pdf.exists():
+        if pdf and pdf.exists():
             font = item.font(0)
             font.setBold(True)
             item.setFont(0, font)
@@ -174,6 +172,8 @@ class SheetTab(VBoxContainer):
                 item.setToolTip(0,'Ergebnisse müssen noch gedruckt werden')
                 
             item.setForeground(0, QBrush(QColor(color)))
+        elif pdf:
+            item.setToolTip(0,'Wertung ist abgeschlossen')
         else:
             item.setToolTip(0,'Wertung ist noch nicht abgeschlossen')
 
