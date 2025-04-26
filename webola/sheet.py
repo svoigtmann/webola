@@ -159,17 +159,23 @@ class SheetTab(VBoxContainer):
         
     def indicate_wertung_done(self, item, klasse):
         pdf = path2urkundepdf(self.xlsx_file(), klasse)
-        if pdf and pdf.exists():
+        if pdf:
+            item.setToolTip(0,'Wertung ist abgeschlossen')
+        elif pdf and pdf.exists():
             font = item.font(0)
             font.setBold(True)
             item.setFont(0, font)
             
             if UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf):
                 color = 'black'     # Wertung.is_done() ... and was printed 
+                item.setToolTip(0,'Ergebnisse wurden bereits gedruckt')
             else:
                 color = 'darkgreen' # Wertung.is_done() ... but needs printing
+                item.setToolTip(0,'Ergebnisse müssen noch gedruckt werden')
                 
             item.setForeground(0, QBrush(QColor(color)))
+        else:
+            item.setToolTip(0,'Wertung ist noch nicht abgeschlossen')
 
     def urkunden_already_printed(self, item):
         return item.foreground(0).color() == QColor('black')
@@ -182,9 +188,9 @@ class SheetTab(VBoxContainer):
                     menu = QMenu()
                     menu.addAction(f"{pdf.name} anzeigen", lambda: self.run_okular(pdf))
                     if self.urkunden_already_printed(item):
-                        menu.addAction(f"Urkunden für {klasse} müssen noch gedruckt werden", lambda: self.mark_urkunden_done(item, klasse, False))
+                        menu.addAction(f"Setze Status: Urkunden für {klasse} noch nicht gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, False))
                     else:
-                        menu.addAction(f"Urkunden für {klasse} wurden bereits gedruckt"    , lambda: self.mark_urkunden_done(item, klasse, True))
+                        menu.addAction(f"Setze Status: Urkunden für {klasse} wurden bereits gedruckt", lambda: self.mark_urkunden_done(item, klasse, True))
                     menu.exec(self.tree.mapToGlobal(point))
 
     def mark_urkunden_done(self, item, klasse, done):
