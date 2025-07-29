@@ -13,9 +13,15 @@ import subprocess
 import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
-from stvo.gui.utils import with_wait_cursor
 from webola.database import UrkundenFertig
 
+def with_wait_cursor(func):
+    def inner(*args, **kwargs):
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        res = func(*args, **kwargs)
+        QApplication.restoreOverrideCursor()
+        return res
+    return inner
 
 class SheetTab(VBoxContainer):
 
