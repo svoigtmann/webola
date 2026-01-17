@@ -35,16 +35,39 @@ def prepare_readme(file):
         f.write(readme)
     return changed(file)
 
+def packages(lines):
+    name = lambda s: s.split('==')[0]
+    return set(map(name, lines)) - {'setuptools'}
+
+def run(cmd):
+    return subprocess.run(cmd.split(), stdin=subprocess.DEVNULL, capture_output=True, text=True).stdout.splitlines()
+
+def pipreqs(**kwargs):
+    cmd    = Path().home() / 'venv' / 'bin' / 'pipreqs'
+    needed = packages(run (f'{cmd} --print'))
+
+    for package, mapping in kwargs.items():
+        if package in needed:
+            for keyword, needs in mapping.items():
+                if found := len(run(f'ack --py -c -l {keyword}'))-1:
+                    needed.add(needs)
+    return needed
+
 def prepare_requirements():
-    with Path('requirements.txt').open() as f:
-        need   = lambda l: f"'{l.strip()}'"
-        needed = ", ".join(map(need, f.readlines()))
-    with Path('setup.py').open() as f:
-        setup = f.read()
-    setup = re.sub(r'install_requires\s*= .*\n', f'install_requires = [{needed}],\n', setup) 
-    with Path('setup.py').open('w') as f:
-        f.write(setup)
-    return 'requirements.txt'
+    require = Path('requirements.txt')
+    current = packages(require.read_text().splitlines())
+    needed  = pipreqs (PyQt5={'QtWebEngine' : 'PyQtWebEngine', 
+                              'QtMultimedia': 'PyQt5-multimedia'})
+    
+    if needed != current:
+        require.write_text("\n".join(needed))
+        names = ", ".join(f"'{n}'" for n in needed)
+        setup = Path('setup.py')
+        text  = re.sub(r'install_requires\s*= .*\n', f'install_requires = [{names}],\n', setup.read_text()) 
+        setup.write_text(text)
+        return 'requirements.txt'
+    else:
+        return None
 
 def collect(*files):
     return list(filter(None, files))
