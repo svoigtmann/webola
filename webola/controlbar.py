@@ -56,7 +56,6 @@ class FileSelector(QObject):
             return None
         else:
             self.set_filename_and_path(name)
-            self.do_export.emit()
             return name
         
     def set_filename_and_path(self, name):
