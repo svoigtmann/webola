@@ -184,7 +184,7 @@ class WebolaGui(QMainWindow):
         wettkampf.vorlaeufe = args.vorlaeufe
         
         # qt_set_sequence_auto_mnemonic(False)
-        self.setWindowIcon(QIcon(":/webola.png"))        
+        self.setWindowIcon(QIcon(":/webola.png")) 
         self.setCentralWidget(Webola(wettkampf, ergebnis, args, self))
         
         screen = QApplication.primaryScreen()
@@ -301,50 +301,10 @@ class Webola(QFrame):
         orm.commit()
                     
     def export(self):
-        QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         orm.commit()
         indicator, exporter = run_export(self.wettkampf, self.tabs, self.control)
         if indicator: self.indicator = indicator
         if exporter : self.exporter  = exporter
-        QApplication.restoreOverrideCursor()
-#        
-#        xlsx    = self.control.xlsx.file()
-#        tex     = Path(xlsx).with_suffix('.tex')
-#        formate = self.control.format.currentText().split('+')
-#        
-#        if xlsx:
-#            QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-#
-#            orm.commit()
-#            
-#            head = self.tabs.sheet.get_header()
-#            ms   = xls_export_zielliste(self.wettkampf, xlsx, head, self)
-#            
-#            if 'TEX' in formate:
-#                
-#                to_do  = tex_export_zielliste (self.wettkampf, tex, head, formate)
-#                
-#                to_do += prepare_latex_export_urkunden(Path(xlsx), ms, SimpleNamespace(
-#                    wettkampf = self.wettkampf, 
-#                    formate   = formate, 
-#                    maxres    = MaxRes(self.control.maxres_einzel .value(), 
-#                                       self.control.maxres_staffel.value()),
-#                    titel     = head, 
-#                    datum     = self.tabs.sheet.date .text(),
-#                    ort       = self.tabs.sheet.ort  .text(), 
-#                    template  = self.control.template.currentText(), 
-#                    staffel   = self.control.staffel .currentText(), 
-#                    modus     = self.control.mode    .currentText(), 
-#                    strafen   = self.control.strafen .currentText(),
-#                    teamname  = self.control.teamname.currentText()))
-#
-#                if to_do:
-#                    self.indicator = Indicator(self.control.export)
-#                    self.exporter  = ExportThread(to_do)
-#                    self.exporter.finished.connect(lambda: self.indicator.reset('Export'))
-#                    self.exporter.start()
-#
-#            QApplication.restoreOverrideCursor()
            
     def resizeEvent(self, event):
         super().resizeEvent(event)
