@@ -30,8 +30,8 @@ def nongui(fun):
 
 def init_latex_export(xlsx, key, head):
     base = (xlsx.parent / f"{xlsx.stem}_{key}")
-    tex  = base.with_suffix('.tex')
-    pdf  = base.with_suffix('.pdf')
+    tex  = base.with_suffix('.tex').relative_to(Path.cwd())
+    pdf  = base.with_suffix('.pdf').relative_to(Path.cwd())
     # maybe remove date from head since it will be printed separately
     head = re.sub(r'\s+\d+\.\d+\.\d+$', '', head) 
     
@@ -138,9 +138,9 @@ def path2urkundepdf(path, klasse=None, typ='Urkunden'):
     if path is None: return None
     
     if klasse:
-        return path.parent / (path.stem + '_' + typ + '_' + (klasse.replace(' ','_').replace('/','_')+".pdf"))
+        return (path.parent / (path.stem + '_' + typ + '_' + (klasse.replace(' ','_').replace('/','_')+".pdf"))).relative_to(Path.cwd())
     else:
-        return path.parent / (path.stem + '_' + typ + '.pdf')
+        return (path.parent / (path.stem + '_' + typ + '.pdf')).relative_to(Path.cwd())
 
 def prepare_latex_export_urkunden(xlsx, ms, latex_data):
     
@@ -155,14 +155,15 @@ def prepare_latex_export_urkunden(xlsx, ms, latex_data):
         to_do.extend(ms_cmds) # call latex to generate Medaillenspiegel
         to_do.extend( u_cmds) # call latex to turn tex into pdf
         
-        if u_cmds and is_linux():
+        if is_linux():
             for wertung in sorted(pages_for.keys()):
                 QApplication.processEvents()
                 pages = ",".join(str(n) for n in pages_for[wertung])
                 pdf   = path2urkundepdf(xlsx)
-                out   = path2urkundepdf(xlsx, wertung.klasse)
+                out   = path2urkundepdf(xlsx, wertung.klasse.name)
                 if pdf and out:
-                    to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
+                    if u_cmds or not out.is_file():
+                        to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
 
     return to_do
 
@@ -256,7 +257,7 @@ def collect_urkunden_data(latex_data):
     for wertung in collect_data(latex_data.wettkampf):
         if not wertung.is_done(): continue
 
-        pos, sieger, klasse = 1, None, wertung.klasse.removesuffix(' (Finallauf)')
+        pos, sieger, klasse = 1, None, wertung.klasse.name.removesuffix(' (Finallauf)')
                 
         for team in Team.sortiere(wertung.teams):
             if team.platz and not team.is_dsq() and latex_data.maxres.valid(team,pos):

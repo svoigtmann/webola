@@ -1,4 +1,4 @@
-from PyQt5 import Qt, QtCore
+from PyQt5 import Qt
 from PyQt5.Qt import QShortcut, QKeySequence, QApplication, QHBoxLayout, QFrame,QSplitter, QFont, QTextEdit, QIcon, QTimer, QSize, QMainWindow,\
     QMessageBox, QCoreApplication, QVBoxLayout
 
@@ -6,14 +6,13 @@ from pony import orm
 
 import time
 
-from webola.database import Starter, Wettkampf
+from webola.database import Starter
 from webola.controlbar import ControlBar
 from webola.tabs  import WebolaTabs
 
 from pathlib import Path
 import psutil
 from webola.dialogs import AskReallyQuit, AskYesNo, AskXlsOrSql
-from webola.importer import xlsx2sql
 import sys
 from webola.runner import run_export
 
@@ -58,18 +57,6 @@ def check_outfile(filename, force):
                 "Soll die Datei wirklich überschrieben werden?"):
         sys.exit(1)
     return outfile
-
-def read_wettkampf_from_db(sql):
-    candidates = Wettkampf.select()[:]
-    if len(candidates) >= 2:
-        data = "".join( "<br>&nbsp;&nbsp;&nbsp;o %s (%s)" % (w.name, w.datum) for w in candidates )
-        early_exit("Die SQL-Datei <b>%s</b> enhält mehrere Wettkämpfe: <br>" % sql
-                   +"%s<br><br>Bitte die SQL-Datei manuell reparieren." % data)        
-    elif len(candidates) == 1:
-        return candidates[0]
-    else:
-        return Wettkampf.create()
-
 
 class LogEdit(QTextEdit):
     def __init__(self, parent=None):
@@ -174,13 +161,9 @@ class CheckBatteryTimer(QTimer):
         #return percent % 2, percent
 
 class WebolaGui(QMainWindow):
-    def __init__(self, xlsx, sql, ergebnis, args):
+    def __init__(self, wettkampf, ergebnis, args):
         super().__init__()
-        if xlsx: 
-            wettkampf = xlsx2sql(xlsx, args.dm_mode)
-        else:
-            wettkampf = read_wettkampf_from_db(sql)
-            
+
         wettkampf.vorlaeufe = args.vorlaeufe
         
         # qt_set_sequence_auto_mnemonic(False)

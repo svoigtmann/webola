@@ -6,8 +6,9 @@ from pony import orm
 
 from webola.gui import WebolaGui, early_exit, maybe_use_sql_file, check_outfile
 from pathlib import Path
-from webola.database import db
+from webola.database import db, Wettkampf
 from webola.utils import is_linux
+from webola.importer import xlsx2sql
 
 # stackoverflow.com/questions/8786136/pyqt-how-to-detect-and-close-ui-if-its-already-running
 class SingleApplication(QApplication):
@@ -77,6 +78,17 @@ def find_files(filename, force, argv):
 
     return xlsx.resolve() if xlsx else None , sql
 
+def read_wettkampf_from_db(sql):
+    candidates = Wettkampf.select()[:]
+    if len(candidates) >= 2:
+        data = "".join( "<br>&nbsp;&nbsp;&nbsp;o %s (%s)" % (w.name, w.datum) for w in candidates )
+        early_exit("Die SQL-Datei <b>%s</b> enhält mehrere Wettkämpfe: <br>" % sql
+                   +"%s<br><br>Bitte die SQL-Datei manuell reparieren." % data)        
+    elif len(candidates) == 1:
+        return candidates[0]
+    else:
+        return Wettkampf.create()
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='webola -- Werderaner Bogenlauf')
     parser.add_argument("input" , nargs='?', metavar= 'name.xlsx' , help="Starterliste entweder als name.xlsx oder name.sql.")
@@ -105,7 +117,8 @@ def start(cmdline_args):
     db.generate_mapping(create_tables=True)
 
     with orm.db_session:
-        dlg = WebolaGui(xlsx, sql, str(outfile.resolve()) if outfile else None, args)
+        wettkampf = xlsx2sql(xlsx, args.dm_mode) if xlsx else read_wettkampf_from_db(sql)
+        dlg = WebolaGui(wettkampf, str(outfile.resolve()) if outfile else None, args)
         dlg.show()
         app.exec()
 

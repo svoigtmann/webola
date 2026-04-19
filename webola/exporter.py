@@ -142,7 +142,7 @@ def generic_export_wertung(wertung, writer, row=0,
         
     writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
     writer.klasse       = wertung.klasse
-    pos, sieger, row = 1, None, write_klasse(row, wertung.klasse, writer.cell)
+    pos, sieger, row = 1, None, write_klasse(row, wertung.klasse.name, writer.cell)
     toprule(row)
 
     for team in Team.sortiere(wertung.teams):

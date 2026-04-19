@@ -1,6 +1,5 @@
-from PyQt5 import Qt
-from PyQt5.Qt import QTreeWidgetItem, QApplication, QMenu, QColor, QBrush,\
-    QTreeWidget
+from PyQt5.Qt import Qt, QTreeWidgetItem, QApplication, QMenu, QColor, QBrush,\
+    QTreeWidget, QLabel, QLineEdit
 from webola.containers import VBoxContainer, HBoxContainer
 from webola.buttons import ToolButton
 from pony import orm
@@ -14,7 +13,6 @@ import subprocess
 import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
-from webola.database import UrkundenFertig
 
 def with_wait_cursor(func):
     def inner(*args, **kwargs):
@@ -31,12 +29,12 @@ class Controls(HBoxContainer):
 
         self.webola = webola
                 
-        self.label  = self.add( Qt.QLabel('Ergebnisliste'))
-        self.header = self.add( Qt.QLineEdit( webola.wettkampf.name ), stretch=3)
-        self.am     = self.add( Qt.QLabel('am'))
-        self.date   = self.add( Qt.QLineEdit( webola.wettkampf.datum), stretch=2)
-        self.im     = self.add( Qt.QLabel('in'))
-        self.ort    = self.add( Qt.QLineEdit( webola.wettkampf.ort  ), stretch=1)
+        self.label  = self.add( QLabel('Ergebnisliste'))
+        self.header = self.add( QLineEdit( webola.wettkampf.name ), stretch=3)
+        self.am     = self.add( QLabel('am'))
+        self.date   = self.add( QLineEdit( webola.wettkampf.datum), stretch=2)
+        self.im     = self.add( QLabel('in'))
+        self.ort    = self.add( QLineEdit( webola.wettkampf.ort  ), stretch=1)
 
         self.medaillen = self.add( ToolButton(":/result.png", tip="Medaillenspiegel anzeigen"))
         self.collapse  = self.add( ToolButton(":/minus.png" , tip="alle Einträge einklappen"  ))
@@ -59,7 +57,7 @@ class Controls(HBoxContainer):
         self.im    .setFont(f)
         self.ort   .setFont(f)
 
-    def header(self):
+    def get_header(self):
         ort = self.ort.text().strip()
         return f"{self.header.text()}" + (f" in {ort}" if ort != '' else '')
 
@@ -84,7 +82,7 @@ class ResultsTree(QTreeWidget):
     def __init__(self, sheet):
         super().__init__()
         self.sheet = sheet
-        self.setContextMenuPolicy(Qt.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.context_menu)
 
         self.setHeaderLabels(['Name','Verein','', 'Zeit','Abstand','Fehler','Strafen'])
@@ -204,12 +202,11 @@ class BasicItem(QTreeWidgetItem):
     def set_alignment(item):
         column_idx = (3,4,5)
         for col in column_idx:
-            item.setTextAlignment(col, Qt.Qt.AlignCenter)
+            item.setTextAlignment(col, Qt.AlignCenter)
     
 class WertungItem(BasicItem):
     def __init__(self, parent, text):
         super().__init__(parent, text)
-        # TODO use correct tooltip
         self.indicate_wertung_done(text)
 
     def indicate_wertung_done(self, klasse):
@@ -220,16 +217,14 @@ class WertungItem(BasicItem):
             font.setBold(True)
             self.setFont(0, font)
             
-            if UrkundenFertig.get(wertung=klasse, wettkampf=sheet.webola.wettkampf):
-                color = 'black'     # Wertung.is_done() ... and was printed 
-                self.setToolTip(0,'Ergebnisse wurden bereits gedruckt')
-            else:
-                color = 'darkgreen' # Wertung.is_done() ... but needs printing
-                self.setToolTip(0,'Ergebnisse müssen noch gedruckt werden')
+            # TODO if UrkundenFertig.get(wertung=klasse, wettkampf=sheet.webola.wettkampf):
+            # TODO     color = 'black'     # Wertung.is_done() ... and was printed 
+            # TODO     self.setToolTip(0,'Ergebnisse wurden bereits gedruckt')
+            # TODO else:
+            # TODO     color = 'darkgreen' # Wertung.is_done() ... but needs printing
+            # TODO     self.setToolTip(0,'Ergebnisse müssen noch gedruckt werden')
                 
-            self.setForeground(0, QBrush(QColor(color)))
-        elif pdf:
-            self.setToolTip(0,'Wertung ist abgeschlossen')
+            #self.setForeground(0, QBrush(QColor(color)))
         else:
             self.setToolTip(0,'Wertung ist noch nicht abgeschlossen')
 
@@ -308,15 +303,16 @@ class SheetTab(VBoxContainer):
         self.run_okular(pdf)
 
     def mark_urkunden_done(self, item, klasse, done):
-        fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)
-
-        if done:
-            if not fertig: UrkundenFertig(wertung=klasse, wettkampf=self.webola.wettkampf)
-        else:
-            if     fertig: fertig.delete()
-            
-        item.indicate_wertung_done(klasse)
-        orm.commit()
+        pass
+        # TODO fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)
+        # TODO 
+        # TODO if done:
+        # TODO     if not fertig: UrkundenFertig(wertung=klasse, wettkampf=self.webola.wettkampf)
+        # TODO else:
+        # TODO     if     fertig: fertig.delete()
+        # TODO     
+        # TODO item.indicate_wertung_done(klasse)
+        # TODO orm.commit()
                 
     def run_okular(self, pdf):
         try:

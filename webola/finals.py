@@ -112,5 +112,4 @@ def copy_team_to_final(source, finallauf):
                 klasse    = starter.klasse,
                 team      = target,
                 nummer    = starter.nummer,
-                strafen   = 0,
-                einheit   = starter.einheit )
+                strafen   = 0 )

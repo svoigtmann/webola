@@ -1,53 +1,25 @@
 import time
 import re
-from pony import orm
 
 from webola.utils import time2str
+from pony.orm.core import Database, Required, Optional, Set, delete, unicode, db_session
 
-db = orm.Database()
-
-class UrkundenFertig(db.Entity):
-    wertung   = orm.Required(str)
-    wettkampf = orm.Required('Wettkampf')
-    orm.composite_key(wertung, wettkampf) 
-
-    @classmethod
-    def get(cls, **kwargs): ... # Stub to make PyDev happy
-
-class Wettkampf(db.Entity):
-    name             = orm.Optional(str)
-    datum            = orm.Required(str)
-    ort              = orm.Optional(str)
-    disqualifikation = orm.Optional(int)
-    vorlaeufe        = orm.Optional(bool)
-    laeufe           = orm.Set('Lauf')
-    urkunden_fertig  = orm.Set(UrkundenFertig)
-    
-    @staticmethod
-    def create(name=None):
-        if name is None:
-            year = time.strftime('%Y', time.gmtime())
-            name = '%d. Werderaner Bogenlauf' % (int(year)-2013)
-        datum = time.strftime('%d. %B %Y', time.gmtime()).lstrip('0')
-        return Wettkampf(name=name, datum=datum)
-
-    def has_day_markers(self):
-        return any(l.wettkampf_tag == 2 for l in self.laeufe)
+db = Database()
 
 class Lauf(db.Entity):
-    wettkampf_tag    = orm.Required(int, min=1)
-    tab_position     = orm.Required(int, min=0)
-    name             = orm.Required(str)
-    wettkampf        = orm.Required(Wettkampf)
-    titel            = orm.Optional(str)
-    startzeit        = orm.Optional(str)
-    anzahl_schiessen = orm.Optional(int, min=1, max= 6)
-    anzahl_pfeile    = orm.Optional(int, min=1, max= 6)
-    auto_start       = orm.Optional(bool)
-    start_offset     = orm.Optional(int, min=0)
-    team_groesse     = orm.Optional(int, min=0, max= 4)
-    teams            = orm.Set("Team")
-    finallauf        = orm.Required(bool)
+    wettkampf_tag    = Required(int, min=1)
+    tab_position     = Required(int, min=0)
+    name             = Required(str)
+    wettkampf        = Required('Wettkampf')
+    titel            = Optional(str)
+    startzeit        = Optional(str)
+    anzahl_schiessen = Optional(int, min=1, max= 6)
+    anzahl_pfeile    = Optional(int, min=1, max= 6)
+    auto_start       = Optional(bool)
+    start_offset     = Optional(int, min=0)
+    team_groesse     = Optional(int, min=0, max= 4)
+    teams            = Set("Team")
+    finallauf        = Required(bool)
 
     @staticmethod
     def create(name, pos, wettkampf):
@@ -90,10 +62,29 @@ class Lauf(db.Entity):
     
         return vorlaeufe
 
+class Wettkampf(db.Entity):
+    name             = Optional(str)
+    datum            = Required(str)
+    ort              = Optional(str)
+    disqualifikation = Optional(int)
+    vorlaeufe        = Optional(bool)
+    laeufe           = Set('Lauf')
+    
+    @staticmethod
+    def create(name=None):
+        if name is None:
+            year = time.strftime('%Y', time.gmtime())
+            name = '%d. Werderaner Bogenlauf' % (int(year)-2013)
+        datum = time.strftime('%d. %B %Y', time.gmtime()).lstrip('0')
+        return Wettkampf(name=name, datum=datum)
+
+    def has_day_markers(self):
+        return any(l.wettkampf_tag == 2 for l in self.laeufe)
+
 class Wertung(db.Entity):
-    name     = orm.Required(orm.unicode, unique=True)
-    kurzname = orm.Required(orm.unicode, unique=True)
-    teams    = orm.Set('Team')
+    name     = Required(unicode, unique=True)
+    kurzname = Required(unicode, unique=True)
+    teams    = Set('Team')
     
     @staticmethod
     def create():
@@ -102,15 +93,16 @@ class Wertung(db.Entity):
         Wertung(name = 'Did Not Start'   , kurzname='DNS'     )
         
 class Team(db.Entity):
-    nummer    = orm.Required(int, min=1)#, max=20)
-    platz     = orm.Optional(int, min=1, max=20)
-    lauf      = orm.Required(Lauf)
-    name      = orm.Optional(str)
-    starter   = orm.Set("Starter") 
-    schiessen = orm.Optional(int, min=0)
-    schiessen_time = orm.Optional(float)
-    running   = orm.Optional(int)
-    wertung   = orm.Required(Wertung)
+    nummer    = Required(int, min=1)#, max=20)
+    platz     = Optional(int, min=1, max=20)
+    lauf      = Required(Lauf)
+    name      = Optional(str)
+    klasse    = Optional('Klasse')
+    starter   = Set("Starter") 
+    schiessen = Optional(int, min=0)
+    schiessen_time = Optional(float)
+    running   = Optional(int)
+    wertung   = Required(Wertung)
     
     def key_nummer  (self): return self.nummer % 100
     def zeit        (self): return sum( s.zeit()   for s in self.starter if s.zeit()   is not None )
@@ -143,9 +135,9 @@ class Team(db.Entity):
     def strafen(self,sec='s'):
         strafen = dict()
         for starter in self.starter:
-            if starter.einheit not in strafen:
-                strafen[starter.einheit] = 0
-            strafen[starter.einheit] += starter.strafen
+            if starter.einheit() not in strafen:
+                strafen[starter.einheit()] = 0
+            strafen[starter.einheit()] += starter.strafen
             
         if strafen:
             strafe = sum(n*e for e,n in strafen.items())
@@ -184,7 +176,7 @@ class Team(db.Entity):
         for num in range(self.anzahl(), n): 
             s = Starter(team=self, nummer=num+1,strafen=0)
             s.einheit = s.get_einheit()
-        orm.delete( s for s in Starter if s.team == self and s.nummer > n)
+        delete( s for s in Starter if s.team == self and s.nummer > n)
       
     def get_abstand(self, first):
         assert self.has_finished() and first
@@ -235,9 +227,9 @@ class Team(db.Entity):
             klasse = self.single().klasse
             verein = self.single().verein
             
-            data = ( '%s, %s' % (klasse, verein) if klasse != "" and verein != "" else
-                   ( '%s'     %  klasse          if klasse != ""                  else
-                   ( '%s'     %          verein  if                  verein != "" else '' )))
+            data = ( '%s, %s' % (klasse.name, verein) if klasse and verein != "" else
+                   ( '%s'     %  klasse.name          if klasse                  else
+                   ( '%s'     %               verein  if            verein != "" else '' )))
             if parts:
                 return data, ""
             else:
@@ -279,33 +271,46 @@ class Team(db.Entity):
                                       key=lambda t: t.zeit()),    # secondary sort
                                       key=lambda t: finished(t))  # primary   sort
 
-class Starter(db.Entity):
-    name      = orm.Optional(str)
-    verein    = orm.Optional(str)
-    klasse    = orm.Optional(str)
-    team      = orm.Required(Team)
-    nummer    = orm.Required(int, min=1)
-    laufzeit  = orm.Optional(float)
-    fehler    = orm.Optional(int, min=0)
-    strafen   = orm.Required(int, min=0)
-    einheit   = orm.Optional(int, min=0)
+class Klasse(db.Entity):
+    name    = Required(unicode, unique=True)
+    strafe  = Optional(int) 
+    pdf     = Optional(unicode, unique=True)
+    teams   = Set('Team')
+    starter = Set('Starter')
+
+    @staticmethod
+    def get_or_create(name):
+        if klasse := Klasse.get(name=name):
+            return klasse
+        else:
+            return Klasse(name=name).update()
+
+    def update(self):
+        self.strafe = 45 if re.match(r'u1[0-6]', self.name, re.IGNORECASE)                    else (
+                      45 if self.name.startswith('Cadet') or self.name.startswith('Aspirant') else (
+                      90 ))
+        return self 
+
+class Starter(db.Entity): 
+    name      = Optional(str)
+    klasse    = Optional(Klasse)
+    team      = Required(Team)
+    nummer    = Required(int, min=1)
+    verein    = Optional(str)
+    laufzeit  = Optional(float)
+    fehler    = Optional(int, min=0)
+    strafen   = Optional(int, min=0)
+
+    def einheit(self):
+        return self.klasse.strafe if self.klasse else 90
 
     def strafzeit(self, sec='s'):
-        if self.strafen > 0:
+        if self.strafen:
             unit = '' if sec=='s' else 'min'
-            return f"{self.strafen}x{self.einheit}{sec} = {time2str(self.strafen*self.einheit,zehntel=False)}{unit}"
+            fac  = self.klasse.strafe
+            return f"{self.strafen}x{fac}{sec} = {time2str(self.strafen*fac, zehntel=False)}{unit}"
         else:
             return ""
-        
-    @staticmethod
-    def compute_einheit(klasse):
-        return 90 if klasse is None                                              else (
-               45 if re.match(r'u1[0-6]', klasse, re.IGNORECASE)                 else (
-               45 if klasse.startswith('Cadet') or klasse.startswith('Aspirant') else (
-               90 )))
-        
-    def get_einheit(self):
-        return self.compute_einheit(self.klasse)
     
     def data_missing(self): return not all((self.name, self.verein, self.klasse))
     
@@ -332,20 +337,23 @@ class Starter(db.Entity):
     def zeit(self):
         return None if self.laufzeit is None else (
                0    if self.laufzeit <= 0    else (
-               self.laufzeit + self.strafen*self.einheit))
+               self.laufzeit + self.strafen*self.einheit()))
 
 
 if __name__ == '__main__':    
     db.bind(provider='sqlite', filename=':memory:')
     db.generate_mapping(create_tables=True)
 
-    with orm.db_session:
+    with db_session:
         wettkampf = Wettkampf.create('Test')
-        lauf      = Lauf(name='Werder', wettkampf=wettkampf, anzahl_schiessen=3, anzahl_pfeile=3, 
+        Wertung.create()
+        lauf      = Lauf(name='Werder', wettkampf=wettkampf, wettkampf_tag = 1, tab_position=1, anzahl_schiessen=3, anzahl_pfeile=3, 
                                   auto_start=True, start_offset=0, team_groesse=1, finallauf=False)
         team      = Team(nummer = 3, lauf = lauf, name = "Werder", wertung=Wertung.get(kurzname='default'))
-        Starter(name='AA', verein='WB', klasse='H Stand', team=team, nummer=1, laufzeit=72, fehler=2, strafen=2, einheit=45)
-        Starter(name='AB', verein='WB', klasse='D Stand', team=team, nummer=2, laufzeit=56, fehler=3, strafen=1, einheit=90)
+        cadet     = Klasse(name='Cadet (M) standard' ).update()
+        senior    = Klasse(name='Senior (W) standard').update()
+        Starter(name='AA', verein='WB', team=team, nummer=1, laufzeit=72, fehler=2, strafen=2, klasse=cadet)
+        Starter(name='AB', verein='WB', team=team, nummer=2, laufzeit=56, fehler=3, strafen=1, klasse=senior)
         Starter(team=team, nummer=3, strafen=0)
 
         print(team.fehler(),team.strafen())

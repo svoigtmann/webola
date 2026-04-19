@@ -6,7 +6,7 @@ import re
 import sys
 
 from webola import database
-from webola.database import db, Wertung
+from webola.database import db, Wertung, Klasse
 
 
 def cell_from_sheet(sheet, row, col, key=None, allow_none=False, warn=True):
@@ -46,12 +46,11 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
             num     = int(nummer.split('-')[1])
             name    = cell(row+n, 'Vorname')+' '+cell(row+n, 'Nachname')
             verein  = cell(row+n, 'Verein')
-            klasse  = cell(row+n, 'Klasse')
+            klasse  = Klasse.get_or_create(cell(row+n, 'Klasse'))
             wertung = not dm_mode or wertung_for(name, verein)
 
-            t = database.Team(nummer=num, lauf=l, wertung=wertung)
-            starter = database.Starter(name=name or "", verein=verein or "", klasse=klasse or "",team=t, nummer=1, strafen=0)
-            starter.einheit = starter.get_einheit()
+            team    = database.Team(nummer=num, lauf=l, wertung=wertung)
+            _       = database.Starter(name=name or "", verein=verein or "", klasse=klasse,team=team, nummer=1, strafen=0)
             
         elif second.startswith('Staffel'):
             l.titel = second
@@ -70,12 +69,11 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
     for n in range(max_row-row+1):
         name   = cell(row+n, 'Name'  )
         verein = cell(row+n, 'Verein')
-        klasse = cell(row+n, 'Klasse')
+        klasse = Klasse.get_or_create(row+n, 'Klasse')
         if all([name,verein,klasse]): 
             wertung = not dm_mode or wertung_for(name, verein)
-            t = database.Team(nummer=n+1,lauf=l,wertung=wertung)
-            starter = database.Starter(name=name or "", verein=verein or "", klasse=klasse or "",team=t, nummer=1, strafen=0)
-            starter.einheit = starter.get_einheit()
+            team = database.Team(nummer=n+1,lauf=l,wertung=wertung)
+            _    = database.Starter(name=name or "", verein=verein or "", klasse=klasse,team=team, nummer=1, strafen=0)
         elif any([name,verein,klasse]): 
             info(f"*** Unvollständige Daten *** name='{name}', verein='{verein}', klasse='{klasse}' in Zeile {row+n}")
 
@@ -99,11 +97,10 @@ def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for
             gender    = cell(row, 'Gender').upper()
             ageclass  = cell(row, 'Age classes')
             bow       = cell(row, 'Bow')
-            klasse    = f"{ageclass} ({gender}) {bow}"
+            klasse    = Klasse.get_or_create(f"{ageclass} ({gender}) {bow}")
             wertung   = wertung_for(name, verein) if dm_mode else Wertung.get(kurzname='default') 
-            t = database.Team(nummer=nummer,lauf=l,wertung=wertung)
-            starter = database.Starter(name=name, verein=verein, klasse=klasse, team=t, nummer=1, strafen=0)
-            starter.einheit = starter.get_einheit()
+            team      = database.Team(nummer=nummer,lauf=l,wertung=wertung)
+            _         = database.Starter(name=name, verein=verein, klasse=klasse, team=team, nummer=1, strafen=0)
 
     db.commit()
 

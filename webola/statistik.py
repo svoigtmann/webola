@@ -47,7 +47,7 @@ class Medaillenspiegel():
     def register_results(self, wettkampf):
         for wertung in collect_data(wettkampf):
             pos = 0
-            if 'Vorlauf' in wertung.klasse: 
+            if 'Vorlauf' in wertung.klasse.name: 
                 continue
             for team in Team.sortiere(wertung.teams):
                 maybe_staffel = self.with_staffel or not team.ist_staffel()
@@ -133,17 +133,10 @@ def collect_data(source, empty=True, tag=None, only=None):
     
     # 1. process *all* teams e.g. in order to get correct labels for Vorlauf/Finallauf
     for t in teams:
-        titel = t.lauf.titel
-        name  = t.lauf.name
-        if t.ist_staffel():
-            key = titel if valid(titel) else name
-        else:
-            klasse = t.single().klasse
-            if only and only != klasse:
-                continue 
-            key = klasse if valid(klasse) else (
-                  titel  if valid(titel ) else name )
-
+        key = t.klasse if t.ist_staffel() else t.single().klasse
+        if only and only != key: 
+            continue 
+        
         if key not in klassen:
             klassen[key] = Wertung(key)
         

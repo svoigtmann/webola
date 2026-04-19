@@ -68,12 +68,12 @@ class ExportThread(QThread):
 
 def run_export(wettkampf, tabs, control):
         xlsx    = control.xlsx.file()
-        tex     = Path(xlsx).with_suffix('.tex')
+        tex     = Path(xlsx).with_suffix('.tex').relative_to(Path.cwd())
         formate = control.format.currentText().split('+')
         
         if xlsx:
             
-            head  = tabs.sheet.controls.header()
+            head  = tabs.sheet.controls.get_header()
             datum = tabs.sheet.controls.date.text()
             datum = f" am {datum}" if datum else ''
 

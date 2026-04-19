@@ -140,7 +140,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 fehler  = team.fehler() or 0
                 treffer = nr*ns*np - fehler
                 name, verein = team.get_name_verein()
-                sheet.write('Klasse'     , wertung.klasse, newline=True)
+                sheet.write('Klasse'     , wertung.klasse.name, newline=True)
                 sheet.write('Name'       , name                  )
                 sheet.write('Verein'     , verein                )
                 sheet.write('Platz'      , "%d" % pos if team.is_ranked() else "-" )
@@ -149,7 +149,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 sheet.write('Treffer'    , treffer               )
                 sheet.write('Laufzeit'   , time2str(team.laufzeit()))
                 sheet.write('Strafen', sum(s.strafen for s in team.liste() ) )
-                einheiten = set( s.einheit for s in team.liste() )
+                einheiten = set( s.klasse.strafe for s in team.liste() )
                 if len(einheiten) == 1:
                     sheet.write('Einheit', einheiten.pop()   )
                 else:
@@ -166,13 +166,13 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                         treffer = ns*np-fehler
                         sheet.write('Name'       , s.get_name()        , starter=idx)
                         sheet.write('Verein'     , s.verein            , starter=idx)
-                        sheet.write('Klasse'     , s.klasse            , starter=idx)
+                        sheet.write('Klasse'     , s.klasse.name       , starter=idx)
                         sheet.write('Zeit'       , time2str(s.zeit())  , starter=idx)
                         sheet.write('Fehler'     , fehler              , starter=idx)
                         sheet.write('Treffer'    , treffer             , starter=idx)
                         sheet.write('Laufzeit'   , time2str(s.laufzeit), starter=idx)
                         sheet.write('Strafen'    , s.strafen           , starter=idx)
-                        sheet.write('Einheit'    , s.einheit           , starter=idx)
+                        sheet.write('Einheit'    , s.klasse.strafe     , starter=idx)
                 
                 pos += 1 if team.is_ranked() else 0
 

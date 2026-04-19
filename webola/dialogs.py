@@ -7,7 +7,7 @@ from pony import orm
 from webola import database
 import sys
 from webola.containers import HBoxContainer, VBoxContainer
-from webola.database import Starter, Wettkampf, Lauf, Wertung
+from webola.database import Starter, Wettkampf, Lauf, Wertung, Klasse
 from pony.orm.core import commit
 from webola.buttons import NoFocusButton
 
@@ -301,10 +301,10 @@ class StarterColumn():
         max_fehler = lauf.anzahl_schiessen * lauf.anzahl_pfeile
         
         self.name        = self.make_edit(starter.name  , starter.get_name(), data.namen  )
-        self.klasse      = self.make_edit(starter.klasse, 'Bogenklasse'     , data.klassen)
+        self.klasse      = self.make_edit(starter.klasse, 'Bogenklasse'     , data.klassen, lambda k: k.name)
         self.verein      = self.make_edit(starter.verein, 'Verein'          , data.vereine)
         self.penalty     = Penalty(number     = starter.strafen, 
-                                   unit       = starter.einheit, 
+                                   unit       = starter.einheit(), 
                                    max_anzahl = lauf.wettkampf.disqualifikation or None) # 0 also means None
         self.zeit_fehler = TimeAndSpin(starter.laufzeit, starter.fehler, max_fehler, team.ist_staffel())
 
@@ -319,11 +319,12 @@ class StarterColumn():
         if not starter.team.has_finished():
             self.zeit_fehler.time.setEnabled(False)
 
-    def make_edit(self, text, hint, data):
-        edit      = make_edit(text, hint)
-        completer = QCompleter(sorted(data), edit)
+    def make_edit(self, text, hint, data, get = lambda obj: obj):
+        edit      = make_edit(get(text), hint)
+        completer = QCompleter(sorted(get(d) for d in data), edit)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         edit.setCompleter(completer)
+        completer.setFilterMode(Qt.MatchContains)
         return edit
 
     def complete(self, name, data):
@@ -338,7 +339,7 @@ class StarterColumn():
             klasse, n = data.klasse(name) 
             if n == 1:
                 self.klasse.setText(klasse)
-                self.penalty.unit.setValue( Starter.compute_einheit(klasse) )
+                self.penalty.unit.setValue( Starter.klasse.strafe )
             elif n >= 2:
                 self.klasse.setPlaceholderText(klasse)
 
@@ -432,17 +433,15 @@ class Edit(OkCancelDialog):
         # store initial times for later comparison
         self.initial = [ s.laufzeit or 0.0 for s in team.liste() ]
                                             
-        #self.adjustSize() # does not work for single starter!?
-#        QTimer.singleShot(0, lambda: self.set_column_width(team))
         QTimer.singleShot(0, lambda: self.table.column[0].zeit_fehler.spin.setFocus(True))
         
-#    def set_column_width(self, team):
-#        pass
-#        #width   = self.table.column[0].name.width()        
-#        #columns = max( len(team.starter), 3 if team.ist_staffel() else 1 )
-#        #for col in range(1,columns+1):
-#        #    self.table.setColumnMinimumWidth(col, width)
-
+    def accept(self):
+        for gui in self.table.column:
+            if not gui.klasse.text().strip():
+                QMessageBox.critical(self, "Fehler", "Das Speichern ist nicht möglich:<br><br>Die Bogenklasse darf nicht leer sein.")
+                return
+        return super().accept()
+        
     def maybe_update(self, old, new):
         text = new.text()
         if old is None and text == "": text = None
@@ -452,8 +451,10 @@ class Edit(OkCancelDialog):
         modified = False
         for db, gui, time in zip(self.team.liste(), self.table.column, self.initial):
             db.name    = self.maybe_update( db.name  , gui.name   ) 
-            db.klasse  = self.maybe_update( db.klasse, gui.klasse )
             db.verein  = self.maybe_update( db.verein, gui.verein )
+            
+            if db.klasse.name != gui.klasse.text():
+                db.klasse = Klasse.get_or_create(gui.klasse.text())
             
             fehler = gui.zeit_fehler.spin.value()
             if db.fehler is None and fehler == -1: fehler = None
@@ -469,8 +470,8 @@ class Edit(OkCancelDialog):
                 db.strafen = strafen
 
             einheit = gui.penalty.unit.value()
-            if einheit != db.einheit:
-                db.einheit = einheit
+            if einheit != db.einheit():
+                db.klasse.strafe = einheit
             
         if self.team.ist_staffel() and self.table.name.text() != self.team.get_name(): 
             self.team.name = self.table.name.text()

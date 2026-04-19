@@ -17,7 +17,7 @@ class Wertung():
             self.ist_staffel = None
     
     def is_done(self):
-        if 'Vorlauf' in self.klasse:
+        if 'Vorlauf' in self.klasse.name:
             return False # never consider 'Vorlauf' as a final result
         
         # all relevant runs must have finished for a Wertung to be done
@@ -91,20 +91,20 @@ class Wertung():
         
     @staticmethod
     def sort_key(tag, klasse):
-        klasse = klasse.lower()
-        alter  = 1 if klasse.startswith('cadet')    else ( 
-                 2 if klasse.startswith('aspirant') else ( 
-                 3 if klasse.startswith('junior')   else ( 
-                 4 if klasse.startswith('u')        else (   # u15 
-                 6 if klasse.startswith('senior')   else (   # u15 
-                 7 if klasse.startswith('master')   else ( 
-                 8 if klasse.startswith('ü')        else (   # ü35 
-                 9 if klasse.startswith('s')        else (   # staffel 
-                 5 ))))))))                                  # Herren/Damen
-        m = re.match(r'[uü](\d+)', klasse)
+        name = klasse.name.lower()
+        alter  = 1 if name.startswith('cadet')    else ( 
+                 2 if name.startswith('aspirant') else ( 
+                 3 if name.startswith('junior')   else ( 
+                 4 if name.startswith('u')        else (   # u15 
+                 6 if name.startswith('senior')   else (   # u15 
+                 7 if name.startswith('master')   else ( 
+                 8 if name.startswith('ü')        else (   # ü35 
+                 9 if name.startswith('s')        else (   # staffel 
+                 5 ))))))))                                # Herren/Damen
+        m = re.match(r'[uü](\d+)', name)
         num = m.group(1) if m else '00'
-        typ   = 1 if 'w' in klasse else (
-                2 if 'm' in klasse else (
+        typ   = 1 if 'w' in name else (
+                2 if 'm' in name else (
                 3 ))
         return f"{tag}_{alter}_{num}_{typ}"
 
