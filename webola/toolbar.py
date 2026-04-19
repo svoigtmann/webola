@@ -88,7 +88,7 @@ class StartStopRestartButton(NoFocusButton):
             s, e = self.run.get_statistics()
             if s == 0 or AskStop(self.run.name(), s,e).exec() == QMessageBox.Ok:
                 self.new_state(State.DONE   , 'Lauf zurücksetzen', self.stop)
-                self.run.tab_widget().sheet.fill_tree() # force generic_export and thus maybe creation of Finallaeufe
+                self.run.tab_widget().sheet.tree.fill() # force generic_export and thus maybe creation of Finallaeufe
                 self.run.tab_widget().setCurrentWidget(self.run)
             else:
                 self.setChecked(True)

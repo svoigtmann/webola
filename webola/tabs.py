@@ -109,7 +109,7 @@ class WebolaTabs(Qt.QTabWidget):
         self.blockSignals(True)
         for lauf in sorted(Lauf.select(lambda l: l.wettkampf == webola.wettkampf), key=lambda l: l.tab_position):
             self.new_tab(webola, args, lauf)
-        self.sheet.fill_tree()
+        self.sheet.tree.fill()
         self.blockSignals(False)
         self.setCurrentIndex(0)
         return len(self.runs())
@@ -184,7 +184,7 @@ class WebolaTabs(Qt.QTabWidget):
     def current_tab_changed(self, idx):
         new = self.widget(idx)
         if isinstance(new, SheetTab):
-            self.sheet.fill_tree()
+            self.sheet.tree.fill()
           
     def new_result_tab(self, webola):
         title = "Ergebnis"

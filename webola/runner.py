@@ -73,8 +73,8 @@ def run_export(wettkampf, tabs, control):
         
         if xlsx:
             
-            head  = tabs.sheet.get_header()
-            datum = tabs.sheet.date.text()
+            head  = tabs.sheet.controls.header()
+            datum = tabs.sheet.controls.date.text()
             datum = f" am {datum}" if datum else ''
 
             ms   = xls_export_zielliste(wettkampf, xlsx, head+datum, tabs)
@@ -89,8 +89,8 @@ def run_export(wettkampf, tabs, control):
                     maxres    = MaxRes(control.maxres_einzel .value(), 
                                        control.maxres_staffel.value()),
                     titel     = head, 
-                    datum     = tabs.sheet.date .text(),
-                    ort       = tabs.sheet.ort  .text(), 
+                    datum     = tabs.sheet.controls.date .text(),
+                    ort       = tabs.sheet.controls.ort  .text(), 
                     template  = control.template.currentText(), 
                     staffel   = control.staffel .currentText(), 
                     modus     = control.mode    .currentText(), 

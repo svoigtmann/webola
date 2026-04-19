@@ -11,6 +11,9 @@ class UrkundenFertig(db.Entity):
     wettkampf = orm.Required('Wettkampf')
     orm.composite_key(wertung, wettkampf) 
 
+    @classmethod
+    def get(cls, **kwargs): ... # Stub to make PyDev happy
+
 class Wettkampf(db.Entity):
     name             = orm.Optional(str)
     datum            = orm.Required(str)
