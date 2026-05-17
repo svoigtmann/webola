@@ -163,9 +163,7 @@ class CheckBatteryTimer(QTimer):
 class WebolaGui(QMainWindow):
     def __init__(self, wettkampf, ergebnis, args):
         super().__init__()
-
-        wettkampf.vorlaeufe = args.vorlaeufe
-        
+                
         # qt_set_sequence_auto_mnemonic(False)
         self.setWindowIcon(QIcon(":/webola.png")) 
         self.setCentralWidget(Webola(wettkampf, ergebnis, args, self))
@@ -200,7 +198,8 @@ class Webola(QFrame):
         super().__init__()
         
         self.setLayout(QVBoxLayout())
-                
+        
+        self.force     = args.force
         self.wettkampf = wettkampf
         self.top_text_width = None
         self.bot_text_width = None
@@ -257,7 +256,7 @@ class Webola(QFrame):
             QMessageBox.information(self, "Programm beenden", "Bitte zuerst %s beenden." % ", ".join(running), QMessageBox.Ok)
             return
         
-        if self.tabs.args.force or AskReallyQuit().exec() == AskReallyQuit.Ok:    
+        if self.force or AskReallyQuit().exec() == AskReallyQuit.Ok:    
             QCoreApplication.quit()
             
     @staticmethod

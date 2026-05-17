@@ -2,7 +2,7 @@ import time
 import re
 
 from webola.utils import time2str
-from pony.orm.core import Database, Required, Optional, Set, delete, unicode, db_session
+from pony.orm.core import Database, Required, Optional, Set, delete, unicode, db_session, composite_key
 
 db = Database()
 
@@ -19,11 +19,10 @@ class Lauf(db.Entity):
     start_offset     = Optional(int, min=0)
     team_groesse     = Optional(int, min=0, max= 4)
     teams            = Set("Team")
-    finallauf        = Required(bool)
 
     @staticmethod
     def create(name, pos, wettkampf):
-        return Lauf(wettkampf_tag=1, tab_position=pos, name=name, wettkampf=wettkampf, anzahl_schiessen=3, anzahl_pfeile=4, auto_start=True, start_offset=0, team_groesse=1, finallauf=False)
+        return Lauf(wettkampf_tag=1, tab_position=pos, name=name, wettkampf=wettkampf, anzahl_schiessen=3, anzahl_pfeile=4, auto_start=True, start_offset=0, team_groesse=1)
 
     def update_name_for_wettkampf_tag(self):
         self.cleanup_name_from_wettkampf_tag()
@@ -40,34 +39,13 @@ class Lauf(db.Entity):
         
     def ist_staffel(self):
         return any(t.ist_staffel() for t in self.teams)
-        
-    def klasse(self):
-        if not self.finallauf: return None
-        klassen = { t.single().klasse for t in self.teams }
-        assert len(klassen) == 1
-        return klassen.pop()
-        
-    def vorlaeufe(self):
-        if not self.finallauf: return None
-        
-        vorlaeufe = set()
-        klasse    = self.klasse()
-        
-        for lauf in self.wettkampf.laeufe:
-            if lauf.finallauf or lauf.ist_staffel(): 
-                continue
-            klassen = { t.single().klasse for t in lauf.teams }
-            if klasse in klassen:
-                vorlaeufe.add(lauf) 
-    
-        return vorlaeufe
 
 class Wettkampf(db.Entity):
     name             = Optional(str)
     datum            = Required(str)
     ort              = Optional(str)
     disqualifikation = Optional(int)
-    vorlaeufe        = Optional(bool)
+    klassen          = Set('Klasse')
     laeufe           = Set('Lauf')
     
     @staticmethod
@@ -97,7 +75,7 @@ class Team(db.Entity):
     platz     = Optional(int, min=1, max=20)
     lauf      = Required(Lauf)
     name      = Optional(str)
-    klasse    = Optional('Klasse')
+    klasse    = Required('Klasse')
     starter   = Set("Starter") 
     schiessen = Optional(int, min=0)
     schiessen_time = Optional(float)
@@ -175,7 +153,7 @@ class Team(db.Entity):
     def update_anzahl(self, n):
         for num in range(self.anzahl(), n): 
             s = Starter(team=self, nummer=num+1,strafen=0)
-            s.einheit = s.get_einheit()
+            # s.einheit = s.get_einheit()
         delete( s for s in Starter if s.team == self and s.nummer > n)
       
     def get_abstand(self, first):
@@ -224,12 +202,11 @@ class Team(db.Entity):
             else:
                 return times+', '+suffix
         else:
-            klasse = self.single().klasse
             verein = self.single().verein
             
-            data = ( '%s, %s' % (klasse.name, verein) if klasse and verein != "" else
-                   ( '%s'     %  klasse.name          if klasse                  else
-                   ( '%s'     %               verein  if            verein != "" else '' )))
+            data = ( '%s, %s' % (self.klasse.name, verein) if self.klasse and verein != "" else
+                   ( '%s'     %  self.klasse.name          if self.klasse                  else
+                   ( '%s'     %                    verein  if                 verein != "" else '' )))
             if parts:
                 return data, ""
             else:
@@ -272,28 +249,47 @@ class Team(db.Entity):
                                       key=lambda t: finished(t))  # primary   sort
 
 class Klasse(db.Entity):
-    name    = Required(unicode, unique=True)
-    strafe  = Optional(int) 
-    pdf     = Optional(unicode, unique=True)
-    teams   = Set('Team')
-    starter = Set('Starter')
+    name        = Required(unicode)
+    wettkampf   = Required(Wettkampf)
+    ist_vorlauf = Optional(bool)
+    sort_idx    = Optional(int)
+    strafe      = Optional(int) 
+    pdf         = Optional(unicode, unique=True)
+    teams       = Set('Team')
 
+    composite_key(name, wettkampf)
+
+    def __lt__(self, other): return self.sort_idx < other.sort_idx 
+    
+    def vorlauf          (self, status): self.ist_vorlauf = status
+    def set_printing_done(self, pdf   ): self.pdf = str(pdf) if pdf else None
+    def is_wertung_done  (self        ): return all( t.lauf.has_finished() for t in self.teams )
+    def ist_staffel      (self        ): return any( t.ist_staffel()       for t in self.teams )    
+    
     @staticmethod
-    def get_or_create(name):
-        if klasse := Klasse.get(name=name):
+    def get_or_create(**kwargs):
+        if klasse := Klasse.get(**kwargs):
             return klasse
         else:
-            return Klasse(name=name).update()
+            return Klasse(**kwargs).update()
 
+    @staticmethod
+    def relevant(wettkampf):
+        for klasse in Klasse.select(wettkampf=wettkampf):
+            if not klasse.teams:
+                klasse.delete()
+            else:
+                yield klasse
+                
     def update(self):
         self.strafe = 45 if re.match(r'u1[0-6]', self.name, re.IGNORECASE)                    else (
                       45 if self.name.startswith('Cadet') or self.name.startswith('Aspirant') else (
                       90 ))
+        self.sort_idx = len(self.wettkampf.klassen)
         return self 
 
 class Starter(db.Entity): 
     name      = Optional(str)
-    klasse    = Optional(Klasse)
     team      = Required(Team)
     nummer    = Required(int, min=1)
     verein    = Optional(str)
@@ -302,7 +298,7 @@ class Starter(db.Entity):
     strafen   = Optional(int, min=0)
 
     def einheit(self):
-        return self.klasse.strafe if self.klasse else 90
+        return self.team.klasse.strafe
 
     def strafzeit(self, sec='s'):
         if self.strafen:
@@ -312,7 +308,7 @@ class Starter(db.Entity):
         else:
             return ""
     
-    def data_missing(self): return not all((self.name, self.verein, self.klasse))
+    def data_missing(self): return not all((self.name, self.verein, self.team.klasse))
     
     def get_name(self, w=None):
         name = self.name                                           if self.name else (
@@ -348,7 +344,7 @@ if __name__ == '__main__':
         wettkampf = Wettkampf.create('Test')
         Wertung.create()
         lauf      = Lauf(name='Werder', wettkampf=wettkampf, wettkampf_tag = 1, tab_position=1, anzahl_schiessen=3, anzahl_pfeile=3, 
-                                  auto_start=True, start_offset=0, team_groesse=1, finallauf=False)
+                                  auto_start=True, start_offset=0, team_groesse=1)
         team      = Team(nummer = 3, lauf = lauf, name = "Werder", wertung=Wertung.get(kurzname='default'))
         cadet     = Klasse(name='Cadet (M) standard' ).update()
         senior    = Klasse(name='Senior (W) standard').update()

@@ -9,7 +9,7 @@ from webola.utils import time2str
 from webola.dialogs import AskModified, AskRestart, Edit
 from webola import database
 import webola
-from webola.database import Wertung
+from webola.database import Wertung, Klasse
 
 def get_parent(base, typ):
     parent = base.parent()
@@ -31,7 +31,8 @@ class TeamButton(SubtitleButton):
     @with_update_tooltip   
     def __init__(self, num, lauf, team=None):
         SubtitleButton.__init__(self, self.was_clicked)
-        self.team     = team or database.Team(nummer=num,lauf=lauf.lauf,wertung=1)
+        default       = Klasse.get_or_create(name='Keine Bogenklasse', wettkampf=lauf.lauf.wettkampf)
+        self.team     = team or database.Team(nummer=num,lauf=lauf.lauf,wertung=1,klasse=default)
         self.lauf     = lauf
         self.offset   = 0
         self.modified = False

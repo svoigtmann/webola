@@ -1,5 +1,6 @@
-from PyQt5.Qt import Qt, QTreeWidgetItem, QApplication, QMenu, QColor, QBrush,\
-    QTreeWidget, QLabel, QLineEdit
+from PyQt5.Qt import Qt, QTreeWidgetItem, QApplication, QMenu, QColor, QTreeWidget, QLabel, QLineEdit,\
+    QBrush, QShortcut, pyqtSignal, QStyledItemDelegate, QPalette, QStyle,\
+    QDesktopServices, QUrl
 from webola.containers import VBoxContainer, HBoxContainer
 from webola.buttons import ToolButton
 from pony import orm
@@ -13,6 +14,8 @@ import subprocess
 import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
+from webola.database import Klasse
+from pony.orm.core import commit
 
 def with_wait_cursor(func):
     def inner(*args, **kwargs):
@@ -78,10 +81,30 @@ class Controls(HBoxContainer):
         self.webola.wettkampf.ort = self.ort.text()
         orm.commit()
 
+def mix(color, factor=0.6):
+    r, g, b = color.red(), color.green(), color.blue()
+    mix = lambda f: int(f + (255 - f) * factor)
+    return QColor(mix(r), mix(g), mix(b))
+
+class KeepColorDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        opt = option
+        if option.state & QStyle.State_Selected:
+            color = index.data(Qt.ForegroundRole)
+            if color:
+                opt.palette.setColor(QPalette.Highlight, mix(color.color()))
+        super().paint(painter, opt, index)
+
 class ResultsTree(QTreeWidget):
     def __init__(self, sheet):
         super().__init__()
         self.sheet = sheet
+
+        self.setItemDelegate(KeepColorDelegate(self))
+        
+        self.setDragDropMode(self.InternalMove)
+        self.setDropIndicatorShown(True)
+        
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.context_menu)
 
@@ -89,11 +112,81 @@ class ResultsTree(QTreeWidget):
         self.setColumnCount(7)
         BasicItem.set_alignment(self.headerItem())
 
+        QShortcut(Qt.CTRL + Qt.Key_Up  , self, lambda: self.move(Qt.Key_Up  ))
+        QShortcut(Qt.CTRL + Qt.Key_Down, self, lambda: self.move(Qt.Key_Down))
+
+    def renumber(self):
+        root = self.invisibleRootItem()
+        for idx in range(root.childCount()):
+            item = root.child(idx)
+            item.klasse.sort_idx = idx
+            item.setText(1, str(idx))
+        commit()
+        
+    def startDrag(self, supportedActions):
+        item = self.currentItem()
+        if item and item.parent() is None:
+            # allow drag only for toplevel items
+            super().startDrag(supportedActions)    
+        else:
+            return
+    
+    def dragMoveEvent(self, event):
+        item = self.itemAt(event.pos())
+        if item and item.parent() is None:
+            # allow drop only on toplevel items
+            super().dragMoveEvent(event)
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        item  = self.currentItem()
+        state = item.isExpanded()
+        
+        super().dropEvent(event) 
+        
+        if item.parent() is not None:
+            # in case of self.dropIndicatorPosition() == QtWidgets.QAbstractItemView.OnItem
+            # toplevel items may become children ... move them up again
+            parent = item.parent()
+            parent.takeChild(parent.indexOfChild(item))
+        
+            root = self.invisibleRootItem()
+            idx  = root.indexOfChild(parent)
+            root.insertChild(idx, item)
+            
+        item.setExpanded(state)
+        self.setCurrentItem(item)
+        item.setSelected(True)
+        self.scrollToItem(item)
+        self.renumber()
+                
+    def swap(self, root, item, idx, offset):
+        state = item.isExpanded()
+        root.takeChild(idx)
+        root.insertChild(idx+offset, item)
+        self.setCurrentItem(item)
+        self.scrollToItem(item)
+        item.setExpanded(state)
+        item.setSelected(True)
+        self.renumber()
+        
+    def move(self, key): 
+        item = self.currentItem()
+        if not isinstance(item, WertungItem): 
+            return
+            
+        root = item.parent() or self.invisibleRootItem()
+        idx  = root.indexOfChild(item)
+        if key == Qt.Key_Up and idx >=1:
+            self.swap(root, item, idx, -1)
+        elif key == Qt.Key_Down and idx < root.childCount()-1:
+            self.swap(root, item, idx, +1)
+
     def fill(self):
         # TODO keep expand state
         self.clear()
-        self.last_parent = self.invisibleRootItem()
-        self.row2item    = dict()
+        self.row2item = dict()
         
         head = self.sheet.controls.header.text()
         
@@ -102,11 +195,7 @@ class ResultsTree(QTreeWidget):
         
         self.update_after_resize()
         self.scale_staffel_fonts()
-        
-        # fill_tree calls generic_export and hence additional Finallaeufe may be created.
-        # Thus we may need to add additional tabs, too.
-        self.sheet.webola.tabs.maybe_add_tabs_for_finallaeufe()
-
+        self.collapseAll()
 
     def scale_staffel_fonts(self):
         for item in self.walk(staffel=True):
@@ -146,28 +235,64 @@ class ResultsTree(QTreeWidget):
 
         self.setColumnWidth(1, width)
 
-
-
     def context_menu(self, point):
-        if not have_latex(): return 
-        
-        if item := self.itemAt(point):
-            if klasse := item.text(0):
-                menu = QMenu()
-                if liste := path2urkundepdf(self.sheet.xlsx_file(), klasse, typ='Starterliste'):
-                    menu.addAction(f"{liste.name} anzeigen", lambda: self.sheet.generate_starter_list(klasse, liste))
-                
-                if pdf := path2urkundepdf(self.sheet.xlsx_file(), klasse, typ='Urkunden'):
-                    if pdf.exists():
-                        menu.addAction(f"{pdf.name} anzeigen", lambda: self.sheet.run_okular(pdf))
-                        if self.sheet.urkunden_already_printed(item):
-                            menu.addAction(f"Setze Status: Urkunden für {klasse} noch nicht gedruckt"    , lambda: self.sheet.mark_urkunden_done(item, klasse, False))
-                        else:
-                            menu.addAction(f"Setze Status: Urkunden für {klasse} wurden bereits gedruckt", lambda: self.sheet.mark_urkunden_done(item, klasse, True))
-                
-                if menu.actions():
-                    menu.exec(self.mapToGlobal(point))
+        class ErgebnisMenu(QMenu):
+            def __init__(self, tree):
+                super().__init__()
+                self.tree = tree
 
+            def add_startliste(self):
+                self.addAction(f"Startliste erzeugen und anzeigen", lambda: self.tree.generate_starter_list(item.klasse, liste))
+
+            def add_make_vorlauf(self, state):
+                if state:
+                    self.addAction(f"Markiere: Diese Wertung ist ein Vorlauf" , lambda: item.vorlauf(True))
+                else:
+                    self.addAction(f"Markiere: Diese Wertung ist kein Vorlauf", lambda: item.vorlauf(False))
+        
+            def add_pdf_options(self, latex, pdf): 
+                if latex and pdf and pdf.exists():
+                    self.addAction(f"Urkunden anzeigen", lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf))))
+                    if item.klasse.pdf:
+                        self.addAction(f"Markiere: Urkunden wurden noch nicht gedruckt", lambda: item.set_printing_done(None))
+                    else:
+                        self.addAction(f"Markiere: Urkunden wurden bereits gedruckt"   , lambda: item.set_printing_done(pdf ))
+        
+        latex = have_latex() 
+        item  = self.itemAt(point)
+        if item and isinstance(item, WertungItem):
+            menu  = ErgebnisMenu(self)
+            liste = path2urkundepdf(self.sheet.xlsx_file(), item.klasse.name, typ='Starterliste')
+            if latex and liste:
+                menu.add_startliste()
+            
+            if item.klasse.ist_vorlauf:
+                menu.add_make_vorlauf(False)
+            else:                
+                pdf = path2urkundepdf(self.sheet.xlsx_file(), item.klasse.name, typ='Urkunden')
+                menu.add_pdf_options(latex, pdf)
+                menu.add_make_vorlauf(True)
+            
+            if menu.actions():
+                menu.exec(self.mapToGlobal(point))
+
+    @with_wait_cursor        
+    def generate_starter_list(self, klasse, pdf):
+        tex    = pdf.with_suffix('.tex')
+        backup = make_backup(tex)
+        
+        with codecs.open(str(tex), 'w', encoding="utf8") as latex:
+            writer = TexTableWriter(latex, show_results=False)
+            generic_export_wertung(klasse, writer, number=True)
+            writer.finish()
+       
+        to_do = prepare_to_run_latex(tex, backup,pdf,['PDF'])    
+       
+        self.sheet.webola.exporter  = ExportThread(to_do)
+        self.sheet.webola.exporter.start_work() # run in foreground 
+        
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf)))
+        
     def write_cell(self, row, col, text, *args):
         assert col>=1
         
@@ -203,30 +328,46 @@ class BasicItem(QTreeWidgetItem):
         column_idx = (3,4,5)
         for col in column_idx:
             item.setTextAlignment(col, Qt.AlignCenter)
-    
+        
 class WertungItem(BasicItem):
     def __init__(self, parent, text):
         super().__init__(parent, text)
-        self.indicate_wertung_done(text)
+        self.klasse = Klasse.get(name = text)
+        self.indicate_wertung_done()
 
-    def indicate_wertung_done(self, klasse):
+    def vorlauf(self, status):
+        self.klasse.ist_vorlauf = status
+        self.indicate_wertung_done()
+
+    def set_printing_done(self, pdf):
+        self.klasse.set_printing_done(pdf)
+        self.indicate_wertung_done()
+        
+    def set_bold(self, colour, hint):
+        font = self.font(0)
+        font.setBold(True)
+        self.setFont(0, font)    
+        self.setForeground(0, QBrush(QColor(colour)))
+        self.setToolTip(0, hint)
+
+    def indicate_wertung_done(self):
         sheet = self.treeWidget().sheet
-        pdf   = path2urkundepdf(sheet.xlsx_file(), klasse)
-        if pdf and pdf.exists():
-            font = self.font(0)
-            font.setBold(True)
-            self.setFont(0, font)
-            
-            # TODO if UrkundenFertig.get(wertung=klasse, wettkampf=sheet.webola.wettkampf):
-            # TODO     color = 'black'     # Wertung.is_done() ... and was printed 
-            # TODO     self.setToolTip(0,'Ergebnisse wurden bereits gedruckt')
-            # TODO else:
-            # TODO     color = 'darkgreen' # Wertung.is_done() ... but needs printing
-            # TODO     self.setToolTip(0,'Ergebnisse müssen noch gedruckt werden')
-                
-            #self.setForeground(0, QBrush(QColor(color)))
+        pdf   = path2urkundepdf(sheet.xlsx_file(), self.klasse.name)
+        if self.klasse.is_wertung_done():
+            vorlauf  = self.klasse.ist_vorlauf
+            have_pdf = pdf and pdf.exists()
+            done     = have_pdf and self.klasse.pdf == str(pdf)
+            color, hint = ('gray'     , 'Vorlauf ist abgeschlossen'               ) if vorlauf  else ( 
+                          ('black'    , 'Ergebnisse wurden bereits gedruckt'      ) if done     else ( 
+                          ('darkgreen', 'Ergebnisse müssen noch gedruckt werden'  ) if have_pdf else (
+                          ('darkblue' , 'Ergebnisse müssen noch exportiert werden'))))
+            self.set_bold(color, hint)
         else:
-            self.setToolTip(0,'Wertung ist noch nicht abgeschlossen')
+            if self.klasse.ist_vorlauf:
+                self.setForeground(0, QBrush(QColor('gray')))
+                self.setToolTip(0,'Vorlauf ist noch nicht abgeschlossen')
+            else:
+                self.setToolTip(0,'Wertung ist noch nicht abgeschlossen')
 
 class ErgebnisItem(BasicItem):
     def __init__(self, parent, text):
@@ -276,50 +417,6 @@ class SheetTab(VBoxContainer):
             return Path(name)
         else:
             return None
-
-    def urkunden_already_printed(self, item):
-        return item.foreground(0).color() == QColor('black')
-
-    @with_wait_cursor        
-    def generate_starter_list(self, klasse, pdf):
-        wertungen = collect_data(self.webola.wettkampf, only=klasse)
-        wertung = [ w for w in wertungen if w.klasse == klasse]
-        if len(wertung) != 1:
-            print(f'[warn] Found {", ".join(w.klasse for w in wertung)}')
-            return
-        
-        tex = pdf.with_suffix('.tex')
-        backup = make_backup(tex)
-        
-        with codecs.open(str(tex), 'w', encoding="utf8") as latex:
-            writer = TexTableWriter(latex, show_results=False)
-            generic_export_wertung(wertung[0], writer, number=True)
-            writer.finish()
-       
-        to_do = prepare_to_run_latex(tex, backup,pdf,['PDF'])    
-       
-        self.webola.exporter  = ExportThread(to_do)
-        self.webola.exporter.start_work() # run in foreground 
-        self.run_okular(pdf)
-
-    def mark_urkunden_done(self, item, klasse, done):
-        pass
-        # TODO fertig = UrkundenFertig.get(wertung=klasse, wettkampf=self.webola.wettkampf)
-        # TODO 
-        # TODO if done:
-        # TODO     if not fertig: UrkundenFertig(wertung=klasse, wettkampf=self.webola.wettkampf)
-        # TODO else:
-        # TODO     if     fertig: fertig.delete()
-        # TODO     
-        # TODO item.indicate_wertung_done(klasse)
-        # TODO orm.commit()
-                
-    def run_okular(self, pdf):
-        try:
-            subprocess.Popen(["okular", str(pdf)], stdout=subprocess.DEVNULL,
-                             stderr=subprocess.DEVNULL, start_new_session=True)
-        except:
-            print("Error starting Okular on '{pdf}'.")
     
     def toprule(self, row, start=1, stop=9):
         pass #create_toprule(sheet, row, start, stop)
@@ -327,3 +424,35 @@ class SheetTab(VBoxContainer):
     def stand(self, row, start=1, stop=9): 
         pass #write_stand   (sheet, row, start, stop)
     
+
+if __name__ == '__main__':
+    from pony.orm.core   import db_session
+    from webola.database import db, Wettkampf
+    import sys, os
+
+    os.chdir('..')
+    print(Path().cwd())
+    
+    db.bind(provider='sqlite', filename='../Startliste_Werder_2026.sql')
+    db.generate_mapping()
+
+    with db_session:
+        class HeaderStub  (): text   = lambda self: 'Test'
+        class ControlsStub(): header = HeaderStub()
+        class WebolaStub  (): 
+            wettkampf = Wettkampf.get()
+        class SheetStub(): 
+            controls  = ControlsStub()
+            webola    = WebolaStub()
+            xlsx_file = lambda self: Path('dummy.xlsx').resolve()
+
+        #for k in Klasse.select():
+        #    k.pdf = None
+        app = QApplication(sys.argv)
+        dlg = ResultsTree(SheetStub())
+        dlg.setMinimumSize(800, 600)
+        dlg.fill()
+        dlg.show()
+        app.exec()
+    
+

@@ -131,21 +131,23 @@ def generic_export(wettkampf_oder_lauf, header, writer,
     
     row = write_header(writer.cell, style['center'])
 
-    for wertung in collect_data(wettkampf_oder_lauf, empty, tag):
-        row = generic_export_wertung(wertung, writer, row, toprule, style)
+    for klasse in collect_data(wettkampf_oder_lauf, empty, tag):
+        row = generic_export_wertung(klasse, writer, row, toprule, style)
   
     stand(row, stop=9)
 
-def generic_export_wertung(wertung, writer, row=0, 
+def generic_export_wertung(klasse, writer, row=0, 
                            toprule = lambda row, start=1, stop=9: None, 
                            style   = defaultdict(int), number = False):
         
-    writer.staffel_mode = StaffelMode.Start if wertung.ist_staffel else StaffelMode.Off
-    writer.klasse       = wertung.klasse
-    pos, sieger, row = 1, None, write_klasse(row, wertung.klasse.name, writer.cell)
+    writer.staffel_mode = StaffelMode.Start if klasse.ist_staffel() else StaffelMode.Off
+    writer.klasse       = klasse
+    pos, sieger, row    = 1, None, write_klasse(row, klasse.name, writer.cell)
     toprule(row)
 
-    for team in Team.sortiere(wertung.teams):
+    teams = sorted(klasse.teams, key=lambda t: t.nummer) if number else Team.sortiere(klasse.teams)
+
+    for team in teams:
         if number:
             writer.cell(row, 2, team.nummer)
             pos += 1

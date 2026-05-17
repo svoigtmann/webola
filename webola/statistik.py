@@ -1,6 +1,5 @@
-from webola.wertung import Wertung
 from pony import orm
-from webola.database import Wettkampf, Starter, Team, Lauf
+from webola.database import Wettkampf, Starter, Team, Lauf, Klasse
 
 class Ergebnis():
     def __init__(self, verein):
@@ -47,8 +46,6 @@ class Medaillenspiegel():
     def register_results(self, wettkampf):
         for wertung in collect_data(wettkampf):
             pos = 0
-            if 'Vorlauf' in wertung.klasse.name: 
-                continue
             for team in Team.sortiere(wertung.teams):
                 maybe_staffel = self.with_staffel or not team.ist_staffel()
                 if maybe_staffel and team.is_ranked() and team.platz:
@@ -122,39 +119,20 @@ class Medaillenspiegel():
 def valid(string):
     return string and string != "" 
 
-def collect_data(source, empty=True, tag=None, only=None):
-    process_single_lauf = isinstance(source, Lauf)
-    wettkampf = source.wettkampf if process_single_lauf else source 
-    if tag is None:
-        teams = Team.select(lambda t: t.lauf.wettkampf == wettkampf)
+def collect_data(source, empty=True, tag=None):
+    if isinstance(source, Lauf):
+        teams   = Team.select(lambda t: t.lauf == source)
+        klassen = sorted( t.klasse for t in teams )
+    elif tag:
+        teams   = Team.select(lambda t: t.lauf.wettkampf == source and  t.lauf.wettkampf_tag == tag)
+        klassen = sorted( t.klasse for t in teams )
     else:
-        teams = Team.select(lambda t: t.lauf.wettkampf == wettkampf and t.lauf.wettkampf_tag == tag)    
-    klassen   = dict()
-    
-    # 1. process *all* teams e.g. in order to get correct labels for Vorlauf/Finallauf
-    for t in teams:
-        key = t.klasse if t.ist_staffel() else t.single().klasse
-        if only and only != key: 
-            continue 
+        klassen = sorted(Klasse.relevant(source))
         
-        if key not in klassen:
-            klassen[key] = Wertung(key)
-        
-        klassen[key].add(t)
-        
-
-    wertungen = []
-    for wertung in klassen.values():
-        if empty is True or not wertung.is_empty():
-            wertungen.extend(wertung.maybe_split())
-
-    # 2. maybe restrict to relevant lauf
-    if process_single_lauf:
-        # here w.laeufe is guaranteed to contain only a single element
-        wertungen = [w for w in wertungen if next(iter(w.laeufe())) == source]
-
-    return sorted(wertungen)
-        
+    if empty:
+        return klassen
+    else:
+        return [ k for k in klassen if not any(t.has_finished() for t in k.teams) ] 
         
 if __name__ == '__main__':    
     from webola.database import db

@@ -257,7 +257,7 @@ def collect_urkunden_data(latex_data):
     for wertung in collect_data(latex_data.wettkampf):
         if not wertung.is_done(): continue
 
-        pos, sieger, klasse = 1, None, wertung.klasse.name.removesuffix(' (Finallauf)')
+        pos, sieger, klasse = 1, None, wertung.klasse.name
                 
         for team in Team.sortiere(wertung.teams):
             if team.platz and not team.is_dsq() and latex_data.maxres.valid(team,pos):
@@ -289,7 +289,7 @@ class StaffelMode(Enum):
  
 class TexTableWriter():
     def __init__(self, file, show_results=True):
-        self.prnt = lambda msg, end='\n': file.write(str(msg)+end) #print(msg,end=end)
+        self.prnt = lambda msg, end='\n': file.write(str(msg)+end)
         self.row  = None
         self.col  = None
         self.count = 0
@@ -306,8 +306,9 @@ class TexTableWriter():
         self.count += 1
             
         if self.staffel_mode != StaffelMode.Off:             
-            header = 'Ergebnisse' if self.show_results else 'Liste'
-            self.prnt(r'\fancyhead[L]{\large\bf %s (Staffel)\quad -- \quad %s}' % (header, self.klasse))
+            header  = 'Ergebnisse' if self.show_results else 'Startliste'
+            staffel = ' (Staffel)' if self.klasse.ist_staffel() else ''
+            self.prnt(r'\fancyhead[L]{\large\bf %s%s\quad -- \quad %s}' % (header, staffel, self.klasse.name))
         
         self.prnt(r'\begin{longtable}{@{\,}l@{\extracolsep{\fill}}cl@{~}l@{~}c@{~}ccc@{~}c@{\,}}')              
                 
@@ -336,7 +337,7 @@ class TexTableWriter():
         self.prnt(r'\usepackage{fancyhdr}')
         self.prnt(r'\fancyhf{}')  
         self.prnt(r'\fancypagestyle{plain}{}') 
-        self.prnt(r'\fancyhead[L]{\large\bf %s\quad -- \quad %s}' % ('Ergebnisse' if self.show_results else 'Liste', text))
+        self.prnt(r'\fancyhead[L]{\large\bf %s\quad -- \quad %s}' % ('Ergebnisse' if self.show_results else 'Startliste', text))
         self.prnt(r'\fancyhead[R]{\footnotesize Seite \thepage\ von \pageref{LastPage}}') 
         self.prnt(r'\pagestyle{plain}') 
         self.prnt(r'\usepackage{csquotes}')
@@ -398,11 +399,12 @@ class TexTableWriter():
             return text 
 
     @staticmethod
-    def use_large(text, bold = False):
+    def use_large(text, bold = False, multi=False):
         if bold:
-            return r'\Large\textbf{'+str(text)+'}'
+            latex = r'\Large\textbf{'+str(text)+'}'
         else: 
-            return r'\Large '+str(text)
+            latex = r'\Large '+str(text)
+        return r"\multicolumn{2}{l}{%s}" % latex if multi else latex
 
     def cell(self, r, c, text, *args):  
         
@@ -422,18 +424,24 @@ class TexTableWriter():
                 self.prnt(r' & ', end='')
 
             staffel = self.staffel_mode != StaffelMode.Off
-            skip_details = c < 4 or  (c<5 and len(args)==2)
-
-            if self.show_results or (staffel and skip_details) or (not staffel and c<5):
-                text = self.maybe_split  (text, c==1)            
-                text = self.maybe_shorten(text, c==3, 21)
+            staffel_header = staffel and c<4 and len(args) <2   
+            staffel_body   = staffel and c<5 and len(args)==2
+            
+            if self.show_results or staffel_header or staffel_body or (not staffel and c<5):
+                text = self.maybe_split  (text, c==1)
+                text = self.maybe_shorten(text, c==3 and not staffel_header, 21)
                 text = self.maybe_shorten(text, c==4, 30)            
                 if self.show_results:
                     text = self.maybe_smaller(text, len(args)==2)
                 else:                        
-                    text = self.use_large(text, bold = staffel and len(args)!=2)
+                    if staffel_header and c==3:
+                        text = self.use_large(text, bold = staffel_header, multi=True)
+                        c += 1
+                    else:
+                        text = self.use_large(text, bold = staffel_header)
                     
-                self.prnt(text, end='')          
+                self.prnt(text, end='')
+                          
             self.row = r
             self.col = c         
             

@@ -115,19 +115,11 @@ class AskRemoveStarter(AskYesNo):
                           text  = text, 
                           info  = "Soll %s Nr. %d wirklich gelöscht werden?" % (key, button.team.nummer))
 
-class AskCreateFinallauf(AskYesNo):
-    def __init__(self, klasse, vorlaeufe):
-        info = ", ".join(vorlaeufe)
-        AskYesNo.__init__(self,
-                          title = "Finallauf anlegen?",
-                          text  = f"Es gibt für <b>{klasse}</b> Ergebnisse in {len(vorlaeufe)} Vorläufen ({info}).",
-                          info  = "Soll ein zugehöriger Finallauf erzeugt werden?")
-
 class AskRestartTab(AskYesNo):
     def __init__(self, name):
         AskYesNo.__init__(self,
                           title = "Rennen neu starten?",
-                          text  = "Beim Neustart werden alle Zeiten / Fehler / Platzierungen gelöscht. Eventuell erzeugte Finalläufe werden aber <b>nicht</b> zurückgesetzt und müssen manuell angepasst werden.",
+                          text  = "Beim Neustart werden alle Zeiten / Fehler / Platzierungen gelöscht.",
                           info  = "Soll das Rennen '%s' wirklich zurück gesetzt werden?" % name)
 
 class AskModified(AskYesNo):
@@ -265,12 +257,12 @@ class Data():
           
         for s in orm.select( s for s in database.Starter if s.team.lauf.wettkampf == wettkampf ):
         
+            self.klassen.add(s.team.klasse)
             if s.verein is not None: self.vereine.add(s.verein)
-            if s.klasse is not None: self.klassen.add(s.klasse)
             if s.name   is not None: 
                 self.namen.add(s.name)
-                self.register(s.name, s.verein, self.name2verein)
-                self.register(s.name, s.klasse, self.name2klasse)
+                self.register(s.name, s.verein     , self.name2verein)
+                self.register(s.name, s.team.klasse, self.name2klasse)
 
     def register(self, name, info, container):
         if info is None: return
@@ -296,21 +288,24 @@ def make_edit(text, hint):
     return edit
 
 class StarterColumn():
-    def __init__(self, starter, data, team):
-        lauf       = starter.team.lauf
+    def __init__(self, starter, data):
+        team       = starter.team
+        lauf       = team.lauf
         max_fehler = lauf.anzahl_schiessen * lauf.anzahl_pfeile
         
-        self.name        = self.make_edit(starter.name  , starter.get_name(), data.namen  )
-        self.klasse      = self.make_edit(starter.klasse, 'Bogenklasse'     , data.klassen, lambda k: k.name)
-        self.verein      = self.make_edit(starter.verein, 'Verein'          , data.vereine)
+        self.wettkampf   = lauf.wettkampf
+        self.name        = self.make_edit(starter.name       , starter.get_name(), data.namen  )
+        self.klasse      = self.make_edit(starter.team.klasse, 'Bogenklasse'     , data.klassen, lambda k: k.name)
+        self.verein      = self.make_edit(starter.verein     , 'Verein'          , data.vereine)
         self.penalty     = Penalty(number     = starter.strafen, 
-                                   unit       = starter.einheit(), 
+                                   unit       = team.klasse.strafe, 
                                    max_anzahl = lauf.wettkampf.disqualifikation or None) # 0 also means None
         self.zeit_fehler = TimeAndSpin(starter.laufzeit, starter.fehler, max_fehler, team.ist_staffel())
 
         self.zeit_fehler.spin.valueChanged.connect(self.penalty.number.setMaximum)
 
-        self.name.completer().activated.connect(lambda name: self.complete(name, data))
+        self.name  .completer().activated.connect(lambda name  : self.complete(name, data))
+        self.klasse.completer().activated.connect(self.update_penalty)
 
         if starter.laufzeit is None or starter.laufzeit <= 0:
             self.zeit_fehler.spin.setEnabled(False)
@@ -326,6 +321,11 @@ class StarterColumn():
         edit.setCompleter(completer)
         completer.setFilterMode(Qt.MatchContains)
         return edit
+
+    def update_penalty(self, name):
+        print(name)
+        klasse = Klasse.get_or_create(name=name, wettkampf=self.wettkampf).update()
+        self.penalty.unit.setValue(klasse.strafe)
 
     def complete(self, name, data):
         if self.verein.text() == '':
@@ -382,7 +382,7 @@ class TeamTable(QGridLayout):
         data = Data(team.lauf.wettkampf)
 
         for s in team.liste():
-            column = self.add(s, data, team, start_row, colspan)
+            column = self.add(s, data, start_row, colspan)
             if team.ist_staffel():
                 column.zeit_fehler.time .textChanged.connect(lambda: self.zeit_fehler.time.setTime (self.zeit  ()))
                 column.zeit_fehler.spin.valueChanged.connect(lambda: self.zeit_fehler.spin.setValue(self.fehler()))
@@ -402,15 +402,15 @@ class TeamTable(QGridLayout):
         self.zeit_fehler.setEnabled(False)
         self.addLayout(self.zeit_fehler, 1, 2)
         
-    def add(self, starter, data, team, start_row, colspan):
-        sc = StarterColumn(starter, data, team)
+    def add(self, starter, data, start_row, colspan):
+        sc = StarterColumn(starter, data)
         self.column.append(sc)
         sc.zeit_fehler.spin.check_modified()
         for row, widget in enumerate((sc.name, sc.verein, sc.klasse, sc.penalty, sc.zeit_fehler), start_row):
             if isinstance(widget, QWidget):
                 if widget == sc.penalty:
                     self.addWidget(widget      , row, starter.nummer  )
-                    if not team.ist_staffel():
+                    if not starter.team.ist_staffel():
                         self.addWidget(self.wertung, row, starter.nummer+1)
 
                 else:
@@ -453,8 +453,8 @@ class Edit(OkCancelDialog):
             db.name    = self.maybe_update( db.name  , gui.name   ) 
             db.verein  = self.maybe_update( db.verein, gui.verein )
             
-            if db.klasse.name != gui.klasse.text():
-                db.klasse = Klasse.get_or_create(gui.klasse.text())
+            if db.team.klasse.name != gui.klasse.text():
+                db.team.klasse = Klasse.get_or_create(name=gui.klasse.text(), wettkampf=self.team.lauf.wettkampf)
             
             fehler = gui.zeit_fehler.spin.value()
             if db.fehler is None and fehler == -1: fehler = None
@@ -468,10 +468,6 @@ class Edit(OkCancelDialog):
             strafen = gui.penalty.number.value()
             if strafen != db.strafen:
                 db.strafen = strafen
-
-            einheit = gui.penalty.unit.value()
-            if einheit != db.einheit():
-                db.klasse.strafe = einheit
             
         if self.team.ist_staffel() and self.table.name.text() != self.team.get_name(): 
             self.team.name = self.table.name.text()
@@ -512,7 +508,7 @@ class GroupEdit(OkCancelDialog):
                 name.setCursorPosition(0)
                 name.setReadOnly(True)
                 name.setFocusPolicy(Qt.NoFocus)
-                name.setToolTip(f'{starter.verein}, {starter.klasse}')
+                name.setToolTip(f'{starter.verein}, {starter.team.klasse}')
                 
                 fehler = -1 if starter.fehler is None else starter.fehler
                 self.spins.append(NoHighlightSpinBox(fehler, maximum=max_fehler))
@@ -628,7 +624,7 @@ if __name__ == '__main__':
 #    with orm.db_session:
 #        wettkampf = database.Wettkampf.create('Test')
 #        lauf      = database.Lauf(name='Werder', wettkampf=wettkampf, anzahl_schiessen=3, anzahl_pfeile=3, 
-#                                  auto_start=True, start_offset=0, team_groesse=1,finallauf=False)
+#                                  auto_start=True, start_offset=0, team_groesse=1)
 #        team      = database.Team(nummer = 3, lauf = lauf, name = "Werder", wertung=1)
 #        database.Starter(name='AA', verein='WB', klasse='H Stand', team=team, nummer=1, laufzeit=72, strafen=2, einheit=None)
 #        database.Starter(name='AB', verein='WB', klasse='D Stand', team=team, nummer=2, laufzeit=56)

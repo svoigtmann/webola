@@ -22,7 +22,7 @@ install:
 dot: webola/database.png
 
 %.dot: %.py
-	../db2dot/db2dot.py -s Klasse,Starter -s Lauf,Team,Wertung -c $< > $@
+	../db2dot/db2dot.py -c $< > $@
 
 %.png: %.dot
 	dot -Tpng $< > $@

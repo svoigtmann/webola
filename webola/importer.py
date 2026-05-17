@@ -36,7 +36,7 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
                          wettkampf = wettkampf     ,
                          wettkampf_tag = 1,
                          tab_position = nr-1, 
-                         startzeit = startzeit, finallauf=False)
+                         startzeit = startzeit)
     
     for n in range(1,max_row-row):
         first  = (sheet.cell(row=row+n, column=1).value or '').strip()
@@ -64,7 +64,7 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
                          wettkampf = wettkampf     ,
                          wettkampf_tag = 1,
                          tab_position = nr-1, 
-                         startzeit = str(cell(row,'Startzeit')), finallauf=False)
+                         startzeit = str(cell(row,'Startzeit')))
     
     for n in range(max_row-row+1):
         name   = cell(row+n, 'Name'  )
@@ -85,7 +85,7 @@ def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for
                       wettkampf = wettkampf    ,
                       wettkampf_tag = 1, 
                       tab_position = run_num,
-                      startzeit = str(cell(row,'Time')), finallauf=False)
+                      startzeit = str(cell(row,'Time')))
     
     for row in range(start,stop+1):
         nummer    = cell(row, 'Nr'        )

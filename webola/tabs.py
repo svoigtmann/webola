@@ -30,7 +30,6 @@ class WebolaTabs(Qt.QTabWidget):
         self.setMovable(True)
         #self.setTabsClosable(True)
 
-        self.args   = args # needed by new_tab when creating Finallaeufe
         self.webola = webola
         self.neu = Qt.QToolButton(self)
         self.neu.setIcon(Qt.QIcon(":/plus.png"))
@@ -113,19 +112,6 @@ class WebolaTabs(Qt.QTabWidget):
         self.blockSignals(False)
         self.setCurrentIndex(0)
         return len(self.runs())
-            
-    def maybe_add_tabs_for_finallaeufe(self):
-        for finallauf in (self.webola.wettkampf.laeufe - {r.lauf for r in self.runs()}):
-            assert finallauf.finallauf
-
-            tabs = [ r for r in self.runs() if r.lauf in finallauf.vorlaeufe() ]
-            tab_widget = tabs[0].tab_widget()
-            to_idx = max(tab_widget.indexOf(t) for t in tabs)+1
-
-            run = self.new_tab(self.webola, self.args, finallauf)
-            from_idx = tab_widget.indexOf(run)
-            
-            tab_widget.tabBar().moveTab(from_idx, to_idx)
         
     def scale_font(self, new, fac):
         for r in self.runs():
