@@ -1,4 +1,4 @@
-# Webola -- *We*rderaner *Bo*gen*la*uf     (2026.5.17)
+# Webola -- *We*rderaner *Bo*gen*la*uf     (2026.4.15)
 
 <!-- toc -->
 
@@ -74,7 +74,6 @@ Zusätzlich zur Startliste können einige wenige Kommandozeilenparameter verwend
 | -f   | --force     |           | Überschreibe die SQL-Datei / Zielliste ohne Nachfrage.       |
 | -p   | --pfeile    |  n        | Verwende n Pfeile pro Schießen (default: 4)                  |
 | -s   | --schiessen |  n        | Verwende n Schießen pro Lauf (default: 3)                    |
-| -v   | --vorlaeufe |           | Verwende Vor- und Finalläufe (experimentell)                 |
 | -o   | --output    | file.xlsx | Schreibe alle Auswertungsergebnisse in die Datei *file.xlsx* |
 | -dm  | --dm-mode   |           | Starter mit 'Team Poland', 'Czech Team', 'Archery Club ...' starten außer Konkurrenz |
 
