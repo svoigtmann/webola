@@ -171,6 +171,7 @@ class WebolaTabs(Qt.QTabWidget):
         new = self.widget(idx)
         if isinstance(new, SheetTab):
             self.sheet.tree.fill()
+            self.sheet.tree.setFocus(True)
           
     def new_result_tab(self, webola):
         title = "Ergebnis"
