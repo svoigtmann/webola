@@ -94,6 +94,15 @@ class KeepColorDelegate(QStyledItemDelegate):
                 opt.palette.setColor(QPalette.Highlight, mix(color.color()))
         super().paint(painter, opt, index)
 
+def keep_expand_state(func):
+    def wrapper(self, *args, **kwargs):
+        state  = { item.key(): item.isExpanded() for item in self.walk() }
+        result = func(self, *args, **kwargs)
+        for item in self.walk():
+            item.setExpanded(state.get(item.key(), False))
+        return result
+    return wrapper
+
 class ResultsTree(QTreeWidget):
     def __init__(self, sheet):
         super().__init__()
@@ -114,6 +123,14 @@ class ResultsTree(QTreeWidget):
         QShortcut(Qt.CTRL + Qt.Key_Up  , self, lambda: self.move(Qt.Key_Up  ))
         QShortcut(Qt.CTRL + Qt.Key_Down, self, lambda: self.move(Qt.Key_Down))
 
+    def resize_columns_to_contents(self):
+        for c in range(self.columnCount()):
+            width = 20
+            for item in self.walk():
+                fm = self.fontMetrics()
+                width = max(width, item.column_width(c, fm))
+            self.setColumnWidth(c, round(1*width))
+        
     def renumber(self):
         root = self.invisibleRootItem()
         for idx in range(root.childCount()):
@@ -181,8 +198,8 @@ class ResultsTree(QTreeWidget):
         elif key == Qt.Key_Down and idx < root.childCount()-1:
             self.swap(root, item, idx, +1)
 
+    @keep_expand_state
     def fill(self):
-        # TODO keep expand state
         self.clear()
         self.row2item = dict()
         
@@ -191,9 +208,8 @@ class ResultsTree(QTreeWidget):
         # no export, but fill the ResultsTree ...
         exporter.generic_export(self.sheet.webola.wettkampf, head, MockWriter(self.write_cell))
         
-        self.update_after_resize()
+        self.resize_columns_to_contents()
         self.scale_staffel_fonts()
-        self.collapseAll()
 
     def scale_staffel_fonts(self):
         for item in self.walk(staffel=True):
@@ -216,22 +232,6 @@ class ResultsTree(QTreeWidget):
                 for k in range(ergebnis.childCount()):
                     staffel = ergebnis.child(k)
                     if staffel or staffel is None: yield staffel
-
-    def update_after_resize(self):
-        self.expandAll()
-        for item in self.walk(staffel=True):
-            item.parent().parent().setExpanded(False)
-        
-        for c in range(self.columnCount()):
-            self.resizeColumnToContents(c)
-
-        width = self.columnWidth(1)
-
-        self.expandAll()
-        for c in range(self.columnCount()):
-            self.resizeColumnToContents(c)
-
-        self.setColumnWidth(1, width)
 
     def context_menu(self, point):
         class ErgebnisMenu(QMenu):
@@ -321,6 +321,18 @@ class BasicItem(QTreeWidgetItem):
         BasicItem.set_alignment(self)
         self.setText(0, text)
 
+    def column_width(self, column, fm):
+        text       = self.text(column)
+        width      = fm.horizontalAdvance(text)
+        style      = self.treeWidget().style()
+        options    = self.treeWidget().viewOptions()
+        padding    = style.pixelMetric(style.PM_FocusFrameHMargin, options, self.treeWidget())
+        decoration = 40 if column == 0 else 0
+        return width + 10*padding + decoration
+        
+    def key(self):
+        return tuple( self.text(col) for col in range(self.columnCount()) )
+    
     @staticmethod
     def set_alignment(item):
         column_idx = (3,4,5)
@@ -392,6 +404,9 @@ class StaffelDetailItem(ErgebnisItem):
         for col in range(1,5):
             QTreeWidgetItem.setText(self, col, other.text(col))
 
+    def column_width(self, column, fm):
+        return 0
+
     def setText(self, col, text):
         if col == 0:
             letter = chr(64 + self.parent().childCount())
@@ -414,7 +429,7 @@ class SheetTab(VBoxContainer):
     def scale_font(self, fac=None):
         self.controls.scale_font(fac)
         self.tree.scale_staffel_fonts()                
-        self.tree.update_after_resize()
+        self.tree.resize_columns_to_contents()
         
     def xlsx_file(self):
         if name := self.webola.control.xlsx.file(dialog=False):
