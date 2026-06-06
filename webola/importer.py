@@ -99,7 +99,7 @@ def create_coloured_db_lauf(wettkampf, sheet, run_num, start, stop, row, col_for
             gender    = cell(row, 'Gender').upper()
             ageclass  = cell(row, 'Age classes')
             bow       = cell(row, 'Bow')
-            klasse    = Klasse.get_or_create(f"{ageclass} ({gender}) {bow}")
+            klasse    = Klasse.get_or_create(name=f"{ageclass} ({gender}) {bow}", wettkampf=wettkampf)
             wertung   = wertung_for(name, verein) if dm_mode else Wertung.get(kurzname='default') 
             team      = database.Team(nummer=nummer,lauf=l,wertung=wertung)
             _         = database.Starter(name=name, verein=verein, _klasse=klasse, team=team, nummer=1, strafen=0)

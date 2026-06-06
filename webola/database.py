@@ -71,7 +71,7 @@ class Wertung(db.Entity):
         Wertung(name = 'Did Not Start'   , kurzname='DNS'     )
         
 class Team(db.Entity):
-    nummer    = Required(int, min=1, max=20)
+    nummer    = Required(int, min=1)
     platz     = Optional(int, min=1, max=20)
     lauf      = Required(Lauf)
     klasse    = Optional('Klasse') # only used in staffel mode
