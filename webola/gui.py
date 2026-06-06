@@ -256,6 +256,8 @@ class Webola(QFrame):
             QMessageBox.information(self, "Programm beenden", "Bitte zuerst %s beenden." % ", ".join(running), QMessageBox.Ok)
             return
         
+        self.tabs.currentWidget().grid.starter.setFocus(True)
+        
         if self.force or AskReallyQuit().exec() == AskReallyQuit.Ok:    
             QCoreApplication.quit()
             
