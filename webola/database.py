@@ -275,8 +275,9 @@ class Klasse(db.Entity):
             return Klasse.default(wettkampf)
 
     def teams(self):
-        return self._teams or set(s.team for s in self.starter)
-
+        teams = self._teams or set(s.team for s in self.starter)
+        return [ t for t in teams if t.ist_staffel() == self.ist_staffel() ] 
+        
     def is_wertung_done(self): 
         return all( t.lauf.has_finished() for t in self.teams() )
     
