@@ -200,7 +200,8 @@ Das **webola**-GUI ist (hoffentlich) weitestgehend selbsterklärend. Deshalb nur
 
  * Mit *Strg+-* bzw *Strg++* wird die Schriftgröße verkleinert/vergrößert. 
  * Mit *Strg+F* kann in den Vollbildmodus gewechselt werden. Es gibt dafür auch einen Button links unten neben dem *Export* Button.
- * Starter/Teams können mit dem Suchfeld unten rechts gesucht wurden. Bei Auswahl des Starters/Teams springt **webola** zur entsprechenden Registerkarte. 
+ * In der Ergebnisübersicht zeigen Tooltips den Status der einzelnen Klassen an (Wertung abgeschlossen, Urkunden bereits gedruckt, ...). Im Kontextmenü können passende Aktionen ausgewählt werden (Starterliste drucken, Urkunden anzeigen, ...). Mit drag'n'drop oder mit Strg+Pfeiltaste können die Klassen verschoben werden. So kann z.B. die Reihenfolge bei der Medaillenvergabe gesteuert werden.
+ * Starter/Teams können mit dem Suchfeld unten rechts gesucht wurden. Bei Auswahl des Starters/Teams springt **webola** zur entsprechenden Registerkarte. Wenn bei leerem Suchfeld einfach Return gedrückt wird, wird der Fokus des Eingabefeldes zurückgesetzt.
  * Bei Staffelläufen kann der Anzeigemodus mit dem Button rechts neben *Staffel* im Toolbar umgeschaltet werden: Entweder wird der Teamname oder direkt die Starter angezeigt. 
 
 
