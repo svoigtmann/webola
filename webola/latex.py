@@ -259,7 +259,7 @@ def collect_urkunden_data(latex_data):
 
         pos, sieger= 1, None
                 
-        for team in Team.sortiere(klasse.teams):
+        for team in Team.sortiere(klasse.teams()):
             if team.platz and not team.is_dsq() and latex_data.maxres.valid(team,pos):
                 if pos == 1:
                     sieger  = team.zeit()

@@ -199,7 +199,7 @@ class ButtonGroup(QFrame):
                 button.team.nummer +=1
             
         new = TeamButton(num, self.lauf, team)
-        new.team.update_anzahl(self.lauf.staffel())
+        new.team.update_anzahl(self.lauf.staffel(), self.lauf.webola.wettkampf)
         ps = new.font().pointSize()
         new.scale_fonts(ps)
         new.log_msg.connect(lambda txt: self.log_msg.emit(txt))

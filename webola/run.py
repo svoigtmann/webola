@@ -124,7 +124,7 @@ class RunTab(QFrame):
     def update_display(self):
         n = self.toolbar.staffel_anzahl()
         for _,b in self.grid.starter.enumerate():
-            b.team.update_anzahl(n)
+            b.team.update_anzahl(n, self.webola.wettkampf)
             b.update_tooltip()
             b.update()
 

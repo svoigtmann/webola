@@ -263,7 +263,7 @@ class Webola(QFrame):
     def unique_key(name, team, cnt=0):
         # mark duplicate names with * or **
         uname = "%s%s" % (name, cnt*"*")
-        info  = "Staffel" if team.ist_staffel() else team.single().klasse
+        info  = "Staffel" if team.ist_staffel() else team.single().klasse().name
         info  = "" if info == "" else ", %s" % info
         return "%s (%s, Nr. %s%s)" % (uname, team.lauf.name, str(team.nummer), info)
         

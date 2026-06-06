@@ -351,7 +351,12 @@ class WertungItem(BasicItem):
     def indicate_wertung_done(self):
         sheet = self.treeWidget().sheet
         pdf   = path2urkundepdf(sheet.xlsx_file(), self.klasse.name)
-        if self.klasse.is_wertung_done():
+        
+        if running := [ r.lauf for r in self.treeWidget().sheet.webola.tabs.runs() if r.is_running() ]:
+            assert len(running) == 1
+            running = set(running[0].teams) & self.klasse.teams() 
+        
+        if not running and self.klasse.is_wertung_done():
             vorlauf  = self.klasse.ist_vorlauf
             have_pdf = pdf and pdf.exists()
             done     = have_pdf and self.klasse.pdf == str(pdf)

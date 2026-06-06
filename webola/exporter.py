@@ -145,7 +145,10 @@ def generic_export_wertung(klasse, writer, row=0,
     pos, sieger, row    = 1, None, write_klasse(row, klasse.name, writer.cell)
     toprule(row)
 
-    teams = sorted(klasse.teams, key=lambda t: t.nummer) if number else Team.sortiere(klasse.teams)
+    if number:
+        teams = sorted(klasse.teams(), key=lambda t: t.nummer) 
+    else:
+        teams = Team.sortiere(klasse.teams())
 
     for team in teams:
         if number:
