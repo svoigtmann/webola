@@ -107,7 +107,7 @@ class Team(db.Entity):
         return self.wertung.name == 'Wettkampf'
         
     def is_dsq(self):
-        strafen = max( starter.strafen for starter in self.starter)
+        strafen = max( (starter.strafen for starter in self.starter), default=0)
         return strafen >= self.lauf.wettkampf.disqualifikation > 0
     
     def strafen(self,sec='s'):
@@ -152,8 +152,7 @@ class Team(db.Entity):
 
     def update_anzahl(self, n):
         for num in range(self.anzahl(), n): 
-            s = Starter(team=self, nummer=num+1,strafen=0)
-            # s.einheit = s.get_einheit()
+            Starter(team=self, nummer=num+1,strafen=0)
         delete( s for s in Starter if s.team == self and s.nummer > n)
       
     def get_abstand(self, first):
@@ -328,7 +327,7 @@ class Starter(db.Entity):
         else:
             return "%s [%2s]" % (time2str(self.zeit()), '--' if self.fehler is None else "%2d" % self.fehler) 
     
-    def is_empty(self): return all(e is None or e == "" for e in (self.name, self.klasse, self.verein))
+    def is_empty(self): return all(e is None or e == "" for e in (self.name, self.team.klasse, self.verein))
 
     def zeit(self):
         return None if self.laufzeit is None else (

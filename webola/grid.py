@@ -6,6 +6,7 @@ from webola.containers import HBoxContainer
 from webola.dialogs import AskRemoveStarter
 
 from pony import orm
+from pony.orm.core import commit
 
 class ButtonGroup(QFrame):
     
@@ -114,6 +115,7 @@ class ButtonGroup(QFrame):
         team = lambda k: teams[k] if teams else None 
         for k in range(self.count(), n):
             self.insert_new_button(self.last(), +1, team(k))
+            
         # ... or maybe delete buttons 
         for k in reversed(range(n,self.count())):
             but = self.button(k)
@@ -126,10 +128,12 @@ class ButtonGroup(QFrame):
                 but.deleteLater()
                 for s in but.team.starter:
                     s.delete()
+                but.team.disconnect_tics()
                 but.team.delete()
                 
         self.team_number_changed.emit(self.count())
         self.lauf.toolbar.anzahl.setEnabled(True)
+        commit()
         
     def add(self, b, pos=False, idx=None):
         if idx is None:
@@ -196,12 +200,14 @@ class ButtonGroup(QFrame):
             
         new = TeamButton(num, self.lauf, team)
         new.team.update_anzahl(self.lauf.staffel())
+        ps = new.font().pointSize()
+        new.scale_fonts(ps)
         new.log_msg.connect(lambda txt: self.log_msg.emit(txt))
         #new.log("Insert new TeamButton with number %d." % idx)
         self.layout().insertWidget(pos, new)
         self.reinsert(self.clear())
         self.team_number_changed.emit(self.count())
-
+        
     def reinsert(self, buttons):
         # (1) ensure consistent button height by re-inserting all buttons
         # (2) ensure consistent team numbers by renumbering buttons (if needed)
@@ -218,6 +224,8 @@ class ButtonGroup(QFrame):
         team = button.team
         for s in team.starter:
             s.delete()
+        
+        button.disconnect_tics()
         team.delete()
         buts = [ b for b in self.clear() if b != button ]        
         self.reinsert(buts)

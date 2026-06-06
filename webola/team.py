@@ -237,9 +237,6 @@ class TeamButton(SubtitleButton):
             except AttributeError: 
                 # ignore initialisation error: 'RunTab' object has no attribute 'grid'
                 first = None
-
-        if self.team.has_finished():
-            assert first is not None   
                 
         if self.lauf.webola.top_text_width is None or self.lauf.webola.bot_text_width is None:
             self.compute_button_text_width()

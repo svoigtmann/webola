@@ -88,7 +88,9 @@ Die Registerkarten (Läufe) können durch Mausklicks bzw. mit den Tasten *Bild h
 
 Für jeden Lauf kann ein Titel vergeben werden. Die geplante Startzeit wird später mit der tatsächlichen Startzeit überschrieben. Die Anzahl Schießen/Pfeile kann pro Lauf variiert werden.
 
-Mit der Combobox *Starter* können weitere Starter hinzugefügt/gelöscht werden. Außerdem können im Toolbar der Startmodus und/oder der Staffelmodus umgeschaltet werden. Neben dem Button *Lauf starten* ist eine Akku-Anzeige eingeblendet, so dass z.B. eine fehlende Stromversorgung während des Wettkampfes schnell erkannt wird.
+Mit der Combobox *Starter* können weitere Starter hinzugefügt/gelöscht werden. Beim Hinzufügen/Einfügen von Startern werden die Startnummern ggf. neu vergeben, beim Löschen von Startern bleiben alte Startnumern intakt.
+
+Im Toolbar kann der Startmodus und/oder der Staffelmodus umgeschaltet werden. Neben dem Button *Lauf starten* ist eine Akku-Anzeige eingeblendet, so dass z.B. eine fehlende Stromversorgung während des Wettkampfes schnell erkannt wird.
 
 #### Starter/Teams editieren
 
