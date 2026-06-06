@@ -12,6 +12,7 @@ from webola.dialogs    import AskStop, AskRestartTab
 
 import webola.icons # @UnusedImport @UnresolvedImport
 import re
+from webola.database import Klasse
 
 class ToggleSpinbox(QSpinBox):
     def __init__(self, parent=None):
@@ -123,7 +124,7 @@ class DisplayModeButton(ToolButton):
         
 
 class ToolBar(HBoxContainer):
-
+    new_title        = QtCore.pyqtSignal(bool)
     reset_clicked    = QtCore.pyqtSignal()
     editing_finished = QtCore.pyqtSignal()
     log_msg          = QtCore.pyqtSignal(str)
@@ -235,16 +236,21 @@ class ToolBar(HBoxContainer):
         text    = self.run.text().strip()
         staffel = self.staffel_button.isChecked()
         run     = self.parent()
-        unique  = text not in list(filter(lambda t: t != "", [ r.toolbar.run.text().strip() for r in run.webola.tabs.runs() if r != run ])) 
+        
+        tab_names = { r.toolbar.run.text().strip() for r in run.webola.tabs.runs() if r != run }
+        klassen   = { k.name for k in Klasse.select() } - { self.parent().lauf.titel }
+        unique    = text not in list(filter(lambda t: t != "", tab_names | klassen)) 
         
         text_ok = (text == "" and not staffel) or (text != "" and unique)
         
         if text_ok:
             self.run.setStyleSheet(None)
+            self.new_title.emit(True)
             return False
         else:
             self.run.setFocus(True)
             self.run.setStyleSheet('QLineEdit {background-color: rgb(255,215,215); }') # MistyRose1
+            self.new_title.emit(False)
             return True
         
              
