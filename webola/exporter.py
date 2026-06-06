@@ -140,12 +140,15 @@ def generic_export_wertung(klasse, writer, row=0,
                            toprule = lambda row, start=1, stop=9: None, 
                            style   = defaultdict(int), number = False):
         
+    teams = [ t for t in klasse.teams() if t.ist_staffel() == klasse.ist_staffel() ] 
+
+    if not teams: return row
+
     writer.staffel_mode = StaffelMode.Start if klasse.ist_staffel() else StaffelMode.Off
     writer.klasse       = klasse
     pos, sieger, row    = 1, None, write_klasse(row, klasse.name, writer.cell)
     toprule(row)
 
-    teams = [ t for t in klasse.teams() if t.ist_staffel() == klasse.ist_staffel() ] 
 
     if number:
         teams = sorted(teams, key=lambda t: t.nummer) 
