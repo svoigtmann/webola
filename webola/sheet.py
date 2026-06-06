@@ -1,16 +1,15 @@
 from PyQt5.Qt import Qt, QTreeWidgetItem, QApplication, QMenu, QColor, QTreeWidget, QLabel, QLineEdit,\
-    QBrush, QShortcut, pyqtSignal, QStyledItemDelegate, QPalette, QStyle,\
+    QBrush, QShortcut, QStyledItemDelegate, QPalette, QStyle,\
     QDesktopServices, QUrl
 from webola.containers import VBoxContainer, HBoxContainer
 from webola.buttons import ToolButton
 from pony import orm
 from webola import exporter
 from webola.dialogs import MedaillenSpiegelDisplay 
-from webola.statistik import Medaillenspiegel, collect_data
+from webola.statistik import Medaillenspiegel
 from webola.exporter import MockWriter, generic_export_wertung
 from pathlib import Path
 from webola.latex import path2urkundepdf, TexTableWriter, prepare_to_run_latex, make_backup
-import subprocess
 import codecs
 from webola.utils import have_latex
 from webola.runner import ExportThread
@@ -120,7 +119,6 @@ class ResultsTree(QTreeWidget):
         for idx in range(root.childCount()):
             item = root.child(idx)
             item.klasse.sort_idx = idx
-            item.setText(1, str(idx))
         commit()
         
     def startDrag(self, supportedActions):
@@ -246,17 +244,17 @@ class ResultsTree(QTreeWidget):
 
             def add_make_vorlauf(self, state):
                 if state:
-                    self.addAction(f"Markiere: Diese Wertung ist ein Vorlauf" , lambda: item.vorlauf(True))
+                    self.addAction(f"Diese Wertung als Vorlauf markieren" , lambda: item.vorlauf(True))
                 else:
-                    self.addAction(f"Markiere: Diese Wertung ist kein Vorlauf", lambda: item.vorlauf(False))
+                    self.addAction(f"Diese Wertung als Finallauf markieren", lambda: item.vorlauf(False))
         
             def add_pdf_options(self, latex, pdf): 
                 if latex and pdf and pdf.exists():
                     self.addAction(f"Urkunden anzeigen", lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf))))
                     if item.klasse.pdf:
-                        self.addAction(f"Markiere: Urkunden wurden noch nicht gedruckt", lambda: item.set_printing_done(None))
+                        self.addAction(f"Urkunden wurden noch nicht gedruckt", lambda: item.set_printing_done(None))
                     else:
-                        self.addAction(f"Markiere: Urkunden wurden bereits gedruckt"   , lambda: item.set_printing_done(pdf ))
+                        self.addAction(f"Urkunden wurden bereits gedruckt"   , lambda: item.set_printing_done(pdf ))
         
         latex = have_latex() 
         item  = self.itemAt(point)
