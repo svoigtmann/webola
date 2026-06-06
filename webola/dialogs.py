@@ -440,7 +440,14 @@ class Edit(OkCancelDialog):
         # store initial times for later comparison
         self.initial = [ s.laufzeit or 0.0 for s in team.liste() ]
                                             
-        QTimer.singleShot(0, lambda: self.table.column[0].zeit_fehler.spin.setFocus(True))
+        QTimer.singleShot(0, self.set_initial_focus)
+        
+    def set_initial_focus(self):
+        for c in self.table.column:
+            if not c.name.text().strip():
+                c.name.setFocus(True)
+                return
+        self.table.column[0].zeit_fehler.spin.setFocus(True)
         
     def maybe_update(self, old, new):
         text = new.text()
