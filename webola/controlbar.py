@@ -4,8 +4,8 @@ from PyQt5.Qt import Qt, QLineEdit, QToolButton, QFileDialog, QStyle, QApplicati
 from webola.buttons    import NoFocusButton, ToolButton
 from webola.containers import HBoxContainer, Line
 from PyQt5 import QtCore
-import subprocess
 from webola import database
+from webola.utils import have_latex
 
 class FileSelector(QObject):
     do_export = QtCore.pyqtSignal()
@@ -183,7 +183,7 @@ class ControlBar(HBoxContainer):
                 'Einzeln+Team': 'einzelne Urkunden und eine Team-Urkunde',
                 'Team'        : 'nur eine Urkunde pro Team'}
 
-        maybe_line = lambda: self.add(Line()) if self.have_latex() else True
+        maybe_line = lambda: self.add(Line()) if have_latex() else True
 
         self.fullscreen = self.add( ToolButton(':/fullscreen', tip='Vollbildmodus umschalten.<br><b>Tipp:</b> Mit Strg-+ und Strg-- kann die Schriftgröße variiert werden.') )
         self.export   = self.add( NoFocusButton('Export' , False ), tooltip='Ergebnisse exportieren' )
@@ -206,7 +206,7 @@ class ControlBar(HBoxContainer):
         maybe_line()
         self.exit     = self.add( NoFocusButton('Beenden', lambda: True), tooltip="Programm beenden" )        
 
-        if self.have_latex():
+        if have_latex():
             self.format.addItem('XLSX+TEX+PDF')
         else:
             self.template      .hide()
@@ -244,10 +244,3 @@ class ControlBar(HBoxContainer):
             self.maxres_staffel.setValue(0)
             self.staffel .setCurrentText('Einzeln'      )
             self.teamname.setCurrentText('mit Teamname')
-
-    def have_latex(self):
-        try:
-            subprocess.check_output(['pdflatex','-v'])
-            return True
-        except:
-            return False

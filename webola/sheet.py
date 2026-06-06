@@ -355,10 +355,11 @@ class WertungItem(BasicItem):
             vorlauf  = self.klasse.ist_vorlauf
             have_pdf = pdf and pdf.exists()
             done     = have_pdf and self.klasse.pdf == str(pdf)
-            color, hint = ('gray'     , 'Vorlauf ist abgeschlossen'               ) if vorlauf  else ( 
-                          ('black'    , 'Ergebnisse wurden bereits gedruckt'      ) if done     else ( 
-                          ('darkgreen', 'Ergebnisse müssen noch gedruckt werden'  ) if have_pdf else (
-                          ('darkblue' , 'Ergebnisse müssen noch exportiert werden'))))
+            color, hint = ('gray'     , 'Vorlauf'                                 ) if vorlauf      else ( 
+                          ('black'    , 'Ergebnisse wurden bereits gedruckt'      ) if done         else ( 
+                          ('darkgreen', 'Ergebnisse müssen noch gedruckt werden'  ) if have_pdf     else (
+                          ('darkblue' , 'Ergebnisse müssen noch exportiert werden') if have_latex() else (
+                          ('darkblue' , 'Wertung ist abgeschlossen')))))
             self.set_bold(color, hint)
         else:
             if self.klasse.ist_vorlauf:
@@ -444,8 +445,6 @@ if __name__ == '__main__':
             webola    = WebolaStub()
             xlsx_file = lambda self: Path('dummy.xlsx').resolve()
 
-        #for k in Klasse.select():
-        #    k.pdf = None
         app = QApplication(sys.argv)
         dlg = ResultsTree(SheetStub())
         dlg.setMinimumSize(800, 600)
