@@ -11,6 +11,7 @@
     + [Starter/Teams editieren](#starterteams-editieren)
     + [Einen Lauf durchführen](#einen-lauf-durchfuhren)
     + [Strafrunden erfassen](#strafrunden-erfassen)
+    + [Vor- und Finalläufe](#vorlauf-finallauf)
   * [Ergebnisse auswerten](#ergebnisse-auswerten)
   * [Staffeln](#staffeln)
 - [Tipps zum GUI](#tipps-zum-gui)
@@ -105,7 +106,7 @@ In jedem Lauf können maximal 20 Starter/Teams starten.
 
 Mit einem Klick auf *Lauf starten* wird der aktuelle Lauf gestartet. Alle Starter/Teams werden für 10 Sekunden grün markiert, um einen erfolgreichen Start zu bestätigen. Die aktuelle Registerkarte wird mit einem * markiert.
 
-Mit den normalen Zifferntasten können Runden für einzelne Starter/Teams markiert werden. Die Anzahl der bereits durchgeführten Schießen wird dann mit jeweils einem Punkt angezeigt. Die Reihenfolge der Starter/Teams wird während des Laufes entsprechend der Rundenmarkierungen/Zeiten angepasst. Der Starter / das Team wird grün/gelb/rot markiert, wenn noch zwei, eins oder kein Schießen mehr offen sind. Die Farbkodierung sichert, dass kein Zieleinlauf verpasst wird. 
+Mit den normalen Zifferntasten können Runden für einzelne Starter/Teams markiert werden. Die Anzahl der bereits durchgeführten Schießeinlagen wird dann mit jeweils einem Punkt angezeigt. Die Reihenfolge der Starter/Teams wird während des Laufes entsprechend der Rundenmarkierungen/Zeiten angepasst. Der Starter / das Team wird grün/gelb/rot markiert, wenn noch zwei, eins oder kein Schießen mehr offen sind. Die Farbkodierung sichert, dass kein Zieleinlauf verpasst wird. 
 
 | Team Nummer | Schießen markieren | Markierung zurücknehmen  | Starten / stoppen |
 | :---------: | :----------------: | :----------------------: | :---------------: | 
@@ -144,17 +145,31 @@ Strafrunden und Zeitstrafen können während des Laufes oder nach dem Lauf erfas
 
 Bei zu wenig gelaufenen Strafrunden erhalten Kinder 45 Sekunden und Erwachsene 90 Sekunden Strafzeit. Diese Strafzeiten können nur einzeln erfasst werden, indem der Starter / das Team bearbeit wird. 
 
+#### Vor- und Finalläufe
+
+Die Anzahl der Startenden in einem Lauf ist begrenzt. Zum einen werden von **webola** wie oben beschrieben nur maximal 20 Personen pro Lauf unterstützt, zum anderen werden aber meist auch nicht 20 Scheiben parallel zur Verfügung stehen. Sollte es also in einer Bogenklasse mehr Teilnehmende als Startplätze geben, müssen Vorläufe realisiert werden.
+
+In **webola** werden Vorläufe pragmatisch umgesetzt, indem der Name der Bogenklasse angepasst wird. Anstelle von z.B. "D Stand" gibt es dann z.B. "D Stand Vorlauf 1" und "D Stand Vorlauf 2". Es ist zu empfehlen, die Vorläufe bereits in der Startliste entsprechend zu markieren.
+
+Die Starterinnen werden in jedem Vorlauf separat gewertet. In der Ergebnisliste können "D Stand Vorlauf 1" und "D Stand Vorlauf 2" als Vorlauf markiert werden, so dass für diese Vorläufe keine Urkunden gedruckt werden.
+
+Der Veranstalter muss festlegen, nach welchen Kriterien es Starterinnen aus den Vorläufen in den Finallauf schaffen. Die entsprechenden Starterinnen werden in einem zusätzlichen Lauf manuell mit der jetzt leeren Bogenklasse "D Stand" nachgetragen. 
+
 ### Ergebnisse auswerten
 
 Alle Zwischenergebnisse (Zeiten, Abstände, Strafrunden und -zeiten) werden sortiert nach der Bogenklasse fortlaufend in der Registerkarte *Ergebnis* aktualisiert. Dort kann auch der aktuelle Medaillenspiegel eingesehen werden.
 
-Wichtig ist, in der die Registerkarte *Ergebnis* den Namen des Wettkampfes und das Datum anzupassen.
+In der Liste können Tooltips angezeigt werden, wenn die Maus über die entsprechende Bogenklasse geführt wird. **webola** weist darauf hin, ob die Wertung bereits abgeschlossen ist, ob Daten noch exportiert werden müssen und ob Urkunden bereits gedruckt wurden. Mit der rechten Maustaste kann ein Kontextmenü ausgeklappt werden, in dem der aktuelle Status der Bogenklasse gesetzt werden kann. Insbesondere können Bogenklassen als Vorlauf markiert werden. Es kann kann markiert werden, ob die entsprechenden Urkunden bereits gedruckt wurden.
+
+Mit drag'n'drop (oder mit Strg+Pfeiltaste) kann die Reihenfolge der Bogenklassen geändert werden. Die Reihenfolge der Bogenklassen wird beim Export der Ergebnisse übernommen.
+
+Wichtig ist, in der Registerkarte *Ergebnis* den Namen des Wettkampfes und das Datum anzupassen, weil diese Daten mit exportiert werden.
 
 Durch Klick auf den *Export* Button werden die Ergebnisse als XLSX-Datei in die sog. Zielliste geschrieben. 
 
 > **Achtung:** Unter Windows kann *nicht* in bereits geöffnete Dateien geschrieben werden. Wenn die Zielliste also bereits geöffnet ist, dann liefert **webola** beim Export einen Fehler. Deshalb muss vor dem Export die Zielliste geschlossen werden.
 
-Die Tabelle *Ergebnis* entspricht der Registerkarte *Ergebnis*. Die weiteren Tabellen umfassen den Medaillenspiegel und die Ergebnisse für jeden einzelnen Lauf. Diese Tabellen können z.B. verwendet werden, um während des Wettkampfs Zwischenergebnisse für die Teilnehmenden auszuhängen. 
+In der beim Export erstellten Excel-Datei entspricht die Tabelle *Ergebnis* der Registerkarte *Ergebnis* von **webola**. Die weiteren Tabellen umfassen den Medaillenspiegel und die Ergebnisse für jeden einzelnen Lauf. Diese Tabellen können z.B. verwendet werden, um während des Wettkampfs Zwischenergebnisse für die Teilnehmenden auszuhängen. 
 
 Schließlich gibt es noch Serienbrief-Tabellen für Einzel- und Staffelrennen. Dort sind alle Ergebnisse detailliert aufgeführt, so dass z.B. mit Hilfe von Serienbriefen Urkunden automatisiert gedruckt werden können. 
 
