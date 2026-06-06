@@ -65,17 +65,23 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
                          wettkampf_tag = 1,
                          tab_position = nr-1, 
                          startzeit = str(cell(row,'Startzeit')))
+    default = Klasse.get_or_create(name='Keine Bogenklasse', wettkampf=wettkampf)
     
     for n in range(max_row-row+1):
         name   = cell(row+n, 'Name'  )
         verein = cell(row+n, 'Verein')
-        klasse = Klasse.get_or_create(row+n, 'Klasse')
+        
+        if found := cell(row+n, 'Klasse'):
+            klasse = Klasse.get_or_create(name=found, wettkampf=wettkampf)
+        else:
+            klasse = default
+            
         if all([name,verein,klasse]): 
             wertung = not dm_mode or wertung_for(name, verein)
-            team = database.Team(nummer=n+1,lauf=l,wertung=wertung)
-            _    = database.Starter(name=name or "", verein=verein or "", klasse=klasse,team=team, nummer=1, strafen=0)
+            team = database.Team(nummer=n+1,lauf=l, wertung=wertung, klasse=klasse)
+            _    = database.Starter(name=name or "", verein=verein or "", team=team, nummer=1, strafen=0)
         elif any([name,verein,klasse]): 
-            info(f"*** Unvollständige Daten *** name='{name}', verein='{verein}', klasse='{klasse}' in Zeile {row+n}")
+            info(f"*** Unvollständige Daten *** name='{name}', verein='{verein}', klasse='{klasse.name}' in Zeile {row+n}")
 
     db.commit()
 
