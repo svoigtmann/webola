@@ -40,8 +40,10 @@ webola.png:
 #	pydeps webola.py -T png --noshow -xx webola.database
 
 requirements.txt: 
-	@pipreqs --force --mode no-pin --ignore attic
+	@./venv/bin/pipreqs --force --mode no-pin --ignore attic,qr,recov,flask-test
 	@sed -i '/setuptools/d' requirements.txt # setuptools only needed for packaging
+	@sed -i '/Faker/d' requirements.txt # faker.py only needed for anonymisation
+	@sed -i '/python_dateutil/d' requirements.txt # faker.py only needed for anonymisation
 	@cat requirements.txt
 
 dist:
