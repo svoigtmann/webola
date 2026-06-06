@@ -379,6 +379,7 @@ class TeamTable(QGridLayout):
 
         data = Data(team.lauf.wettkampf)
 
+        widgets = []
         for s in team.liste():
             column = self.add(s, data, start_row, colspan)
             if team.ist_staffel():
@@ -386,7 +387,15 @@ class TeamTable(QGridLayout):
                 column.zeit_fehler.spin.valueChanged.connect(lambda: self.zeit_fehler.spin.setValue(self.fehler()))
                 column.penalty.number  .valueChanged.connect(lambda: self.zeit_fehler.time.setTime (self.zeit  ()))
                 column.penalty.unit    .valueChanged.connect(lambda: self.zeit_fehler.time.setTime (self.zeit  ()))
-        
+            
+            widgets.extend([column.name, column.verein,column.klasse])
+            
+        QTimer.singleShot(0, lambda: self.set_tab_order(widgets))
+            
+    def set_tab_order(self, widgets):
+        for a,b in zip(widgets[:-1], widgets[1:]):
+            QWidget.setTabOrder(a, b)
+            
     def zeit  (self): return sum( c.zeit_fehler.time.time()+c.penalty.time() for c in self.column )
     def fehler(self): return sum( c.zeit_fehler.value(lower=0)               for c in self.column )
             
