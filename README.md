@@ -1,4 +1,4 @@
-# Webola -- *We*rderaner *Bo*gen*la*uf     (2026.5.17)
+# Webola -- *We*rderaner *Bo*gen*la*uf     (2026.6.6)
 
 <!-- toc -->
 
