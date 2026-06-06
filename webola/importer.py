@@ -46,10 +46,7 @@ def create_dm23_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
             num     = int(nummer.split('-')[1])
             name    = cell(row+n, 'Vorname')+' '+cell(row+n, 'Nachname')
             verein  = cell(row+n, 'Verein')
-            if found := cell(row+n, 'Klasse'):
-                klasse = Klasse.get_or_create(name=found, wettkampf=wettkampf)
-            else:
-                klasse = Klasse.default(wettkampf)
+            klasse  = Klasse.for_name(cell(row+n, 'Klasse'), wettkampf)
             wertung = not dm_mode or wertung_for(name, verein)
 
             team    = database.Team(nummer=num, lauf=l, wertung=wertung)
@@ -72,13 +69,10 @@ def create_db_lauf(nr, wettkampf, sheet, row, col, max_row, dm_mode):
     for n in range(max_row-row+1):
         name   = cell(row+n, 'Name'  )
         verein = cell(row+n, 'Verein')
-        
-        if found := cell(row+n, 'Klasse'):
-            klasse = Klasse.get_or_create(name=found, wettkampf=wettkampf)
-        else:
-            klasse = Klasse.default(wettkampf)
+        key    = cell(row+n, 'Klasse')
+        klasse = Klasse.for_name(key, wettkampf)
             
-        if all([name,verein,klasse]): 
+        if all([name, verein, key]):
             wertung = not dm_mode or wertung_for(name, verein)
             team = database.Team(nummer=n+1,lauf=l, wertung=wertung)
             _    = database.Starter(name=name or "", verein=verein or "", team=team, nummer=1, strafen=0, _klasse=klasse)

@@ -445,11 +445,8 @@ class Edit(OkCancelDialog):
             db.verein  = self.maybe_update( db.verein, gui.verein )
             
             if db.klasse().name != gui.klasse.text().strip():
-                wettkampf = self.team.lauf.wettkampf
-                if name := gui.klasse.text().strip():
-                    db._klasse = Klasse.get_or_create(name=name, wettkampf=wettkampf)
-                else:
-                    db._klasse = Klasse.default(wettkampf)
+                wettkampf  = self.team.lauf.wettkampf
+                db._klasse = Klasse.for_name(gui.klasse.text().strip(), wettkampf)
         
             fehler = gui.zeit_fehler.spin.value()
             if db.fehler is None and fehler == -1: fehler = None

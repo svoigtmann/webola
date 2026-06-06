@@ -8,6 +8,7 @@ from webola.grid import Grid
 from webola.toolbar import ToolBar
 from webola import utils
 from webola.dialogs import GroupEdit
+from webola.database import Klasse
 
 class RunTab(QFrame):
 
@@ -66,13 +67,21 @@ class RunTab(QFrame):
             self.grid.ergebnis.update_display()
 
     def editing_finished(self):
-        self.lauf.titel            = self.toolbar.run.text()
-        self.lauf.startzeit        = self.toolbar.startzeit.text()
+        self.lauf.titel            = self.toolbar.run.text().strip()
+        self.lauf.startzeit        = self.toolbar.startzeit.text().strip()
         self.lauf.anzahl_schiessen = self.toolbar.schiessen.value()
         self.lauf.anzahl_pfeile    = self.toolbar.pfeile.value()
         self.lauf.auto_start       = self.toolbar.offset_button.isChecked()
         self.lauf.start_offset     = self.toolbar.offset.value()
         self.lauf.team_groesse     = self.toolbar.staffel.value() if self.toolbar.staffel_button.isChecked() else None
+        
+        if self.lauf.ist_staffel():
+            klasse = Klasse.for_name(self.lauf.titel, self.lauf.wettkampf)
+        else:
+            klasse = None
+            
+        for team in self.lauf.teams:
+            team.klasse = klasse
         
         orm.commit()
                 
@@ -122,9 +131,14 @@ class RunTab(QFrame):
             but.was_clicked()  
 
     def update_display(self):
-        n = self.toolbar.staffel_anzahl()
+        n         = self.toolbar.staffel_anzahl()
+        name      = self.toolbar.run.text().strip()
+        wettkampf = self.webola.wettkampf
+        klasse    = None if n == 1 else Klasse.for_name(name, wettkampf)
+        
         for _,b in self.grid.starter.enumerate():
-            b.team.update_anzahl(n, self.webola.wettkampf)
+            b.team.klasse = klasse
+            b.team.update_anzahl(n, wettkampf)
             b.update_tooltip()
             b.update()
 

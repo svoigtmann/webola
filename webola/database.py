@@ -265,8 +265,14 @@ class Klasse(db.Entity):
     
     def vorlauf          (self, status): self.ist_vorlauf = status
     def set_printing_done(self, pdf   ): self.pdf = str(pdf) if pdf else None
-    def ist_staffel      (self        ): return any( t.ist_staffel() for t in self.teams() )    
+    def ist_staffel      (self        ): return len(self._teams) > 0    
 
+    @staticmethod
+    def for_name(name, wettkampf):
+        if name.strip():
+            return Klasse.get_or_create(name=name.strip(), wettkampf=wettkampf)
+        else:
+            return Klasse.default(wettkampf)
 
     def teams(self):
         return self._teams or set(s.team for s in self.starter)
@@ -288,7 +294,7 @@ class Klasse(db.Entity):
     @staticmethod
     def relevant(wettkampf):
         for klasse in Klasse.select(wettkampf=wettkampf):
-            if not klasse.starter:
+            if not klasse.starter and not klasse._teams:
                 klasse.delete()
             else:
                 yield klasse
