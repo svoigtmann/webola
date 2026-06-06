@@ -156,11 +156,11 @@ def prepare_latex_export_urkunden(xlsx, ms, latex_data):
         to_do.extend( u_cmds) # call latex to turn tex into pdf
         
         if is_linux():
-            for wertung in sorted(pages_for.keys()):
+            for klasse in sorted(pages_for.keys()):
                 QApplication.processEvents()
-                pages = ",".join(str(n) for n in pages_for[wertung])
+                pages = ",".join(str(n) for n in pages_for[klasse])
                 pdf   = path2urkundepdf(xlsx)
-                out   = path2urkundepdf(xlsx, wertung.klasse.name)
+                out   = path2urkundepdf(xlsx, klasse.name)
                 if pdf and out:
                     if u_cmds or not out.is_file():
                         to_do.append(['pdfjam','--quiet','--outfile',str(out),str(pdf),pages])
@@ -213,7 +213,7 @@ class Urkunde():
       
 class EinzelUrkunde(Urkunde):
     def __init__(self, team, pos, klasse, abstand):
-        super().__init__(team, 'name', pos, klasse, abstand)      
+        super().__init__(team, 'name', pos, klasse.name, abstand)      
         self.tex = r'\urkunde{%s,verein={%s}}' % (self.data, self.texify(self.verein))
 
 class StaffelUrkunde(Urkunde):
@@ -254,12 +254,12 @@ def collect_urkunden_data(latex_data):
     
     Urkunde.zaehler = 0
     
-    for wertung in collect_data(latex_data.wettkampf):
-        if not wertung.is_done(): continue
+    for klasse in collect_data(latex_data.wettkampf):
+        if not klasse.is_wertung_done(): continue
 
-        pos, sieger, klasse = 1, None, wertung.klasse.name
+        pos, sieger= 1, None
                 
-        for team in Team.sortiere(wertung.teams):
+        for team in Team.sortiere(klasse.teams):
             if team.platz and not team.is_dsq() and latex_data.maxres.valid(team,pos):
                 if pos == 1:
                     sieger  = team.zeit()
@@ -272,10 +272,10 @@ def collect_urkunden_data(latex_data):
                 else:
                     urkunde = EinzelUrkunde (team, pos, klasse, abstand)
                 
-                if wertung not in pages_for:
-                    pages_for[wertung] = []
+                if klasse not in pages_for:
+                    pages_for[klasse] = []
                 
-                pages_for[wertung].append(urkunde.nummer)
+                pages_for[klasse].append(urkunde.nummer)
                 urkunden.append(urkunde)
                 
                 pos += 1 if team.is_ranked() else 0

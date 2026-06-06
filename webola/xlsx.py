@@ -149,7 +149,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 sheet.write('Treffer'    , treffer               )
                 sheet.write('Laufzeit'   , time2str(team.laufzeit()))
                 sheet.write('Strafen', sum(s.strafen for s in team.liste() ) )
-                einheiten = set( s.klasse.strafe for s in team.liste() )
+                einheiten = set( s.team.klasse.strafe for s in team.liste() )
                 if len(einheiten) == 1:
                     sheet.write('Einheit', einheiten.pop()   )
                 else:
