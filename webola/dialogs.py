@@ -294,9 +294,9 @@ class StarterColumn():
         max_fehler = lauf.anzahl_schiessen * lauf.anzahl_pfeile
         
         self.wettkampf   = lauf.wettkampf
-        self.name        = self.make_edit(starter.name       , starter.get_name(), data.namen  )
-        self.klasse      = self.make_edit(starter.team.klasse, 'Bogenklasse'     , data.klassen, lambda k: k.name)
-        self.verein      = self.make_edit(starter.verein     , 'Verein'          , data.vereine)
+        self.name        = self.make_edit(starter.name            , starter.get_name(), data.namen  )
+        self.klasse      = self.make_edit(starter.team.klasse.name, 'Bogenklasse'     , [k.name for k in data.klassen], clear=True)
+        self.verein      = self.make_edit(starter.verein          , 'Verein'          , data.vereine)
         self.penalty     = Penalty(number     = starter.strafen, 
                                    unit       = team.klasse.strafe, 
                                    max_anzahl = lauf.wettkampf.disqualifikation or None) # 0 also means None
@@ -314,12 +314,13 @@ class StarterColumn():
         if not starter.team.has_finished():
             self.zeit_fehler.time.setEnabled(False)
 
-    def make_edit(self, text, hint, data, get = lambda obj: obj):
-        edit      = make_edit(get(text), hint)
-        completer = QCompleter(sorted(get(d) for d in data), edit)
+    def make_edit(self, text, hint, data, clear=False):
+        edit      = make_edit(text, hint)
+        completer = QCompleter(sorted(d for d in data), edit)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         edit.setCompleter(completer)
         completer.setFilterMode(Qt.MatchContains)
+        if clear and text == 'Keine Bogenklasse': edit.setClearButtonEnabled(True)
         return edit
 
     def update_penalty(self, name):
