@@ -205,7 +205,7 @@ class PenaltyUnit(PenaltySpinBox):
         self.setSuffix(' sec')
 
     def stepBy(self, n):
-        return NoHighlightSpinBox.stepBy(self, n*45)
+        return NoHighlightSpinBox.stepBy(self, n*5)
          
 class Penalty(HBoxContainer):
     def __init__(self, number, unit, max_anzahl):
@@ -289,10 +289,14 @@ class StarterColumn():
         lauf       = team.lauf
         max_fehler = lauf.anzahl_schiessen * lauf.anzahl_pfeile
         
+        klasse = starter.klasse()
+        default = Klasse.default(lauf.wettkampf)
+        klasse = None if klasse == default else klasse.name
+        
         self.wettkampf   = lauf.wettkampf
-        self.name        = self.make_edit(starter.name         , starter.get_name(), data.namen  )
-        self.klasse      = self.make_edit(starter.klasse().name, 'Bogenklasse'     , [k.name for k in data.klassen], clear=True)
-        self.verein      = self.make_edit(starter.verein       , 'Verein'          , data.vereine)
+        self.name        = self.make_edit(starter.name  , starter.get_name() , data.namen  )
+        self.klasse      = self.make_edit(klasse        , 'Keine Bogenklasse', [k.name for k in data.klassen])
+        self.verein      = self.make_edit(starter.verein, 'Verein'           , data.vereine)
         self.penalty     = Penalty(number     = starter.strafen, 
                                    unit       = starter.klasse().strafe, 
                                    max_anzahl = lauf.wettkampf.disqualifikation or None) # 0 also means None
@@ -302,25 +306,20 @@ class StarterColumn():
 
         self.name  .completer().activated.connect(lambda name  : self.complete(name, data))
         self.klasse.completer().activated.connect(self.update_penalty)
-
-        if starter.laufzeit is None or starter.laufzeit <= 0:
-            self.zeit_fehler.spin.setEnabled(False)
-            self.penalty.setEnabled(False)
-
+        
         if not starter.team.has_finished():
             self.zeit_fehler.time.setEnabled(False)
-
-    def make_edit(self, text, hint, data, clear=False):
+        
+    def make_edit(self, text, hint, data):
         edit      = make_edit(text, hint)
         completer = QCompleter(sorted(d for d in data), edit)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         edit.setCompleter(completer)
         completer.setFilterMode(Qt.MatchContains)
-        if clear and text == 'Keine Bogenklasse': edit.setClearButtonEnabled(True)
         return edit
 
     def update_penalty(self, name):
-        klasse = Klasse.get_or_create(name=name, wettkampf=self.wettkampf).update()
+        klasse = Klasse.get_or_create(name=name, wettkampf=self.wettkampf)
         self.penalty.unit.setValue(klasse.strafe)
 
     def complete(self, name, data):
@@ -331,21 +330,17 @@ class StarterColumn():
             elif n >= 2:
                 self.verein.setPlaceholderText(verein)
         
-        default = Klasse.default(self.wettkampf)
-        
-        if self.klasse.text() in ('', default.name):
-            klassen = data.name2klasse[name] if name in data.name2klasse else []
-            if len(klassen) == 0:
-                self.klasse.setText(default.name)
-                self.klasse.setClearButtonEnabled(True)
-            elif len(klassen) == 1:
-                klasse = klassen.pop()
-                self.klasse.setText(klasse.name)
-                self.penalty.unit.setValue( klasse.strafe )
-                self.klasse.setClearButtonEnabled(False)
-            else:
-                text = ", ".join(k.name for k in sorted(klassen))
-                self.klasse.setPlaceholderText(text)
+        klassen = data.name2klasse[name] if name in data.name2klasse else []
+        if len(klassen) == 0:
+            default = Klasse.default(self.wettkampf)
+            self.klasse.setPlaceholderText(default.name)
+        elif len(klassen) == 1:
+            klasse = klassen.pop()
+            self.klasse.setText(klasse.name)
+            self.penalty.unit.setValue( klasse.strafe )
+        else:
+            text = ", ".join(k.name for k in sorted(klassen))
+            self.klasse.setPlaceholderText(text)
 
 class WertungCombo(QComboBox):
     def __init__(self, wertung):
@@ -438,13 +433,6 @@ class Edit(OkCancelDialog):
                                             
         QTimer.singleShot(0, lambda: self.table.column[0].zeit_fehler.spin.setFocus(True))
         
-    def accept(self):
-        for gui in self.table.column:
-            if not gui.klasse.text().strip():
-                QMessageBox.critical(self, "Fehler", "Das Speichern ist nicht möglich:<br><br>Die Bogenklasse darf nicht leer sein.")
-                return
-        return super().accept()
-        
     def maybe_update(self, old, new):
         text = new.text()
         if old is None and text == "": text = None
@@ -456,9 +444,13 @@ class Edit(OkCancelDialog):
             db.name    = self.maybe_update( db.name  , gui.name   ) 
             db.verein  = self.maybe_update( db.verein, gui.verein )
             
-            if db.klasse().name != gui.klasse.text():
-                db._klasse = Klasse.get_or_create(name=gui.klasse.text(), wettkampf=self.team.lauf.wettkampf)
-            
+            if db.klasse().name != gui.klasse.text().strip():
+                wettkampf = self.team.lauf.wettkampf
+                if name := gui.klasse.text().strip():
+                    db._klasse = Klasse.get_or_create(name=name, wettkampf=wettkampf)
+                else:
+                    db._klasse = Klasse.default(wettkampf)
+        
             fehler = gui.zeit_fehler.spin.value()
             if db.fehler is None and fehler == -1: fehler = None
             if fehler is not None and fehler != db.fehler:
@@ -471,6 +463,9 @@ class Edit(OkCancelDialog):
             strafen = gui.penalty.number.value()
             if strafen != db.strafen:
                 db.strafen = strafen
+
+            if db.klasse().strafe != gui.penalty.unit.value(): 
+                db.klasse().strafe = gui.penalty.unit.value()
             
         if self.team.ist_staffel() and self.table.name.text() != self.team.get_name(): 
             self.team.name = self.table.name.text()
