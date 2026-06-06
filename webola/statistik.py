@@ -44,9 +44,9 @@ class Medaillenspiegel():
         self.sort()
 
     def register_results(self, wettkampf):
-        for wertung in collect_data(wettkampf):
+        for klasse in collect_data(wettkampf):
             pos = 0
-            for team in Team.sortiere(wertung.teams):
+            for team in Team.sortiere(klasse.teams()):
                 maybe_staffel = self.with_staffel or not team.ist_staffel()
                 if maybe_staffel and team.is_ranked() and team.platz:
                     pos += 1
@@ -119,20 +119,26 @@ class Medaillenspiegel():
 def valid(string):
     return string and string != "" 
 
+def teams2klassen(teams):
+    klassen = set()
+    for team in teams:
+        for starter in team.liste():
+            klassen.add(starter.klasse())
+    klassen.update(filter(None, (t.klasse for t in teams)))
+    return sorted( klassen )
+
 def collect_data(source, empty=True, tag=None):
     if isinstance(source, Lauf):
-        teams   = Team.select(lambda t: t.lauf == source)
-        klassen = sorted( t.klasse for t in teams )
+        klassen = teams2klassen(Team.select(lambda t: t.lauf == source))
     elif tag:
-        teams   = Team.select(lambda t: t.lauf.wettkampf == source and  t.lauf.wettkampf_tag == tag)
-        klassen = sorted( t.klasse for t in teams )
+        klassen = teams2klassen(Team.select(lambda t: t.lauf.wettkampf == source and  t.lauf.wettkampf_tag == tag))
     else:
         klassen = sorted(Klasse.relevant(source))
         
     if empty:
         return klassen
     else:
-        return [ k for k in klassen if not any(t.has_finished() for t in k.teams) ] 
+        return [ k for k in klassen if not any(t.has_finished() for t in k.teams()) ] 
         
 if __name__ == '__main__':    
     from webola.database import db

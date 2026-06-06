@@ -7,7 +7,7 @@ from pony import orm
 from webola import database
 import sys
 from webola.containers import HBoxContainer, VBoxContainer
-from webola.database import Starter, Wettkampf, Lauf, Wertung, Klasse
+from webola.database import Wettkampf, Lauf, Wertung, Klasse
 from pony.orm.core import commit
 from webola.buttons import NoFocusButton
 
@@ -257,12 +257,12 @@ class Data():
           
         for s in orm.select( s for s in database.Starter if s.team.lauf.wettkampf == wettkampf ):
         
-            self.klassen.add(s.team.klasse)
+            self.klassen.add(s.klasse())
             if s.verein is not None: self.vereine.add(s.verein)
             if s.name   is not None: 
                 self.namen.add(s.name)
-                self.register(s.name, s.verein     , self.name2verein)
-                self.register(s.name, s.team.klasse, self.name2klasse)
+                self.register(s.name, s.verein  , self.name2verein)
+                self.register(s.name, s.klasse(), self.name2klasse)
 
     def register(self, name, info, container):
         if info is None: return
@@ -274,10 +274,6 @@ class Data():
     def verein(self, name):
         if name in self.name2verein:
             return ", ".join(self.name2verein[name]), len(self.name2verein[name])
-
-    def klasse(self, name):
-        if name in self.name2klasse:
-            return ", ".join(self.name2klasse[name]), len(self.name2klasse[name])
 
 def make_edit(text, hint):
     edit = QLineEdit()
@@ -294,11 +290,11 @@ class StarterColumn():
         max_fehler = lauf.anzahl_schiessen * lauf.anzahl_pfeile
         
         self.wettkampf   = lauf.wettkampf
-        self.name        = self.make_edit(starter.name            , starter.get_name(), data.namen  )
-        self.klasse      = self.make_edit(starter.team.klasse.name, 'Bogenklasse'     , [k.name for k in data.klassen], clear=True)
-        self.verein      = self.make_edit(starter.verein          , 'Verein'          , data.vereine)
+        self.name        = self.make_edit(starter.name         , starter.get_name(), data.namen  )
+        self.klasse      = self.make_edit(starter.klasse().name, 'Bogenklasse'     , [k.name for k in data.klassen], clear=True)
+        self.verein      = self.make_edit(starter.verein       , 'Verein'          , data.vereine)
         self.penalty     = Penalty(number     = starter.strafen, 
-                                   unit       = team.klasse.strafe, 
+                                   unit       = starter.klasse().strafe, 
                                    max_anzahl = lauf.wettkampf.disqualifikation or None) # 0 also means None
         self.zeit_fehler = TimeAndSpin(starter.laufzeit, starter.fehler, max_fehler, team.ist_staffel())
 
@@ -335,14 +331,21 @@ class StarterColumn():
             elif n >= 2:
                 self.verein.setPlaceholderText(verein)
         
-        if self.klasse.text() == '':
-            klasse, n = data.klasse(name) 
-            if n == 1:
-                self.klasse.setText(klasse)
-                self.penalty.unit.setValue( Starter.klasse.strafe )
-            elif n >= 2:
-                self.klasse.setPlaceholderText(klasse)
-
+        default = Klasse.default(self.wettkampf)
+        
+        if self.klasse.text() in ('', default.name):
+            klassen = data.name2klasse[name] if name in data.name2klasse else []
+            if len(klassen) == 0:
+                self.klasse.setText(default.name)
+                self.klasse.setClearButtonEnabled(True)
+            elif len(klassen) == 1:
+                klasse = klassen.pop()
+                self.klasse.setText(klasse.name)
+                self.penalty.unit.setValue( klasse.strafe )
+                self.klasse.setClearButtonEnabled(False)
+            else:
+                text = ", ".join(k.name for k in sorted(klassen))
+                self.klasse.setPlaceholderText(text)
 
 class WertungCombo(QComboBox):
     def __init__(self, wertung):
@@ -453,8 +456,8 @@ class Edit(OkCancelDialog):
             db.name    = self.maybe_update( db.name  , gui.name   ) 
             db.verein  = self.maybe_update( db.verein, gui.verein )
             
-            if db.team.klasse.name != gui.klasse.text():
-                db.team.klasse = Klasse.get_or_create(name=gui.klasse.text(), wettkampf=self.team.lauf.wettkampf)
+            if db.klasse().name != gui.klasse.text():
+                db._klasse = Klasse.get_or_create(name=gui.klasse.text(), wettkampf=self.team.lauf.wettkampf)
             
             fehler = gui.zeit_fehler.spin.value()
             if db.fehler is None and fehler == -1: fehler = None
@@ -508,7 +511,7 @@ class GroupEdit(OkCancelDialog):
                 name.setCursorPosition(0)
                 name.setReadOnly(True)
                 name.setFocusPolicy(Qt.NoFocus)
-                name.setToolTip(f'{starter.verein}, {starter.team.klasse}')
+                name.setToolTip(f'{starter.verein}, {starter.klasse}')
                 
                 fehler = -1 if starter.fehler is None else starter.fehler
                 self.spins.append(NoHighlightSpinBox(fehler, maximum=max_fehler))

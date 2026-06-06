@@ -132,7 +132,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
         # renumber all positions within the current class since team.platz is the position in the team's run
         pos, sieger = 1, None
         
-        for team in Team.sortiere(klasse.teams):
+        for team in Team.sortiere(klasse.teams()):
             if team.ist_staffel() == staffel and team.platz and not team.is_dsq():
                 nr = team.anzahl()
                 ns = team.lauf.anzahl_schiessen
@@ -149,7 +149,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 sheet.write('Treffer'    , treffer               )
                 sheet.write('Laufzeit'   , time2str(team.laufzeit()))
                 sheet.write('Strafen', sum(s.strafen for s in team.liste() ) )
-                einheiten = set( s.team.klasse.strafe for s in team.liste() )
+                einheiten = set( s.klasse().strafe for s in team.liste() )
                 if len(einheiten) == 1:
                     sheet.write('Einheit', einheiten.pop()   )
                 else:
