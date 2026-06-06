@@ -128,11 +128,11 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
     create_toprule(sheet.xlsx, 3, 1, sheet.max_col())
     create_toprule(sheet.xlsx, 4, 1, sheet.max_col())
     
-    for wertung in collect_data(wettkampf):
+    for klasse in collect_data(wettkampf):
         # renumber all positions within the current class since team.platz is the position in the team's run
         pos, sieger = 1, None
         
-        for team in Team.sortiere(wertung.teams):
+        for team in Team.sortiere(klasse.teams):
             if team.ist_staffel() == staffel and team.platz and not team.is_dsq():
                 nr = team.anzahl()
                 ns = team.lauf.anzahl_schiessen
@@ -140,7 +140,7 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                 fehler  = team.fehler() or 0
                 treffer = nr*ns*np - fehler
                 name, verein = team.get_name_verein()
-                sheet.write('Klasse'     , wertung.klasse.name, newline=True)
+                sheet.write('Klasse'     , klasse.name, newline=True)
                 sheet.write('Name'       , name                  )
                 sheet.write('Verein'     , verein                )
                 sheet.write('Platz'      , "%d" % pos if team.is_ranked() else "-" )
