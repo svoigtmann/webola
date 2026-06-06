@@ -166,13 +166,13 @@ def serial_export(staffel, xlsx, wettkampf, header, write_cell):
                         treffer = ns*np-fehler
                         sheet.write('Name'       , s.get_name()        , starter=idx)
                         sheet.write('Verein'     , s.verein            , starter=idx)
-                        sheet.write('Klasse'     , s.klasse.name       , starter=idx)
+                        sheet.write('Klasse'     , s.klasse().name     , starter=idx)
                         sheet.write('Zeit'       , time2str(s.zeit())  , starter=idx)
                         sheet.write('Fehler'     , fehler              , starter=idx)
                         sheet.write('Treffer'    , treffer             , starter=idx)
                         sheet.write('Laufzeit'   , time2str(s.laufzeit), starter=idx)
                         sheet.write('Strafen'    , s.strafen           , starter=idx)
-                        sheet.write('Einheit'    , s.klasse.strafe     , starter=idx)
+                        sheet.write('Einheit'    , s.klasse().strafe   , starter=idx)
                 
                 pos += 1 if team.is_ranked() else 0
 

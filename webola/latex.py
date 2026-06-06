@@ -74,7 +74,10 @@ def prepare_to_run_latex(tex,backup,pdf,formats):
     if 'PDF' in formats:        
         to_do = []
         
-        if backup and filecmp.cmp(backup,tex, shallow=False) and tex.with_suffix('.pdf').exists():
+        pdffile = tex.with_suffix('.pdf')
+        nodiff  = filecmp.cmp(backup,tex, shallow=False)
+                
+        if backup and nodiff and pdffile.exists():
             print(f"[INFO] No need to run LaTeX on unchanged file '{tex}' ...")
         else:
             tex_tmp = tex.parent / 'tex-tmp'
@@ -218,7 +221,7 @@ class EinzelUrkunde(Urkunde):
 
 class StaffelUrkunde(Urkunde):
     def __init__(self, team, pos, klasse, abstand, modus):
-        super().__init__(team, 'team', pos, klasse, abstand)
+        super().__init__(team, 'team', pos, klasse.name, abstand)
         starter  = self.collect_starter()
         self.tex = r'\staffelurkunde{%s,vereine={%s}}{%s}'  % (self.data, self.texify(self.verein), ",".join("{%s}" % s for s in starter))
 

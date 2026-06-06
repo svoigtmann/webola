@@ -323,6 +323,14 @@ class Starter(db.Entity):
     def einheit(self):
         return self.klasse().strafe
     
+    def strafzeit(self, sec='s'): 
+        if self.strafen: 
+            unit = '' if sec=='s' else 'min' 
+            fac  = self.klasse.strafe 
+            return f"{self.strafen}x{fac}{sec} = {time2str(self.strafen*fac, zehntel=False)}{unit}" 
+        else: 
+            return "" 
+
     def data_missing(self): return not all((self.name, self.verein, self.klasse))
     
     def get_name(self, w=None):
