@@ -324,7 +324,6 @@ class StarterColumn():
         return edit
 
     def update_penalty(self, name):
-        print(name)
         klasse = Klasse.get_or_create(name=name, wettkampf=self.wettkampf).update()
         self.penalty.unit.setValue(klasse.strafe)
 
