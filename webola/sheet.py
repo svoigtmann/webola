@@ -125,7 +125,7 @@ class ResultsTree(QTreeWidget):
 
     def resize_columns_to_contents(self):
         for c in range(self.columnCount()):
-            width = 20
+            width = 60
             for item in self.walk():
                 fm = self.fontMetrics()
                 width = max(width, item.column_width(c, fm))
