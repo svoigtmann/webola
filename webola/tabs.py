@@ -107,7 +107,8 @@ class WebolaTabs(Qt.QTabWidget):
     def fill_from_db(self, webola, args):
         self.blockSignals(True)
         for lauf in sorted(Lauf.select(lambda l: l.wettkampf == webola.wettkampf), key=lambda l: l.tab_position):
-            self.new_tab(webola, args, lauf)
+            tab = self.new_tab(webola, args, lauf)
+            tab.toolbar.new_title.connect(self.webola.control.exit.setEnabled)
         self.sheet.tree.fill()
         self.blockSignals(False)
         self.setCurrentIndex(0)
